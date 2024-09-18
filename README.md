@@ -2,7 +2,7 @@
 
 PyTorch code for *"Disentangled Information Bottleneck"*.
 
-Paper Link: [[arXiv]](https://arxiv.org/pdf/2012.07372.pdf)
+Paper Link: [[呵呵]](https://arxiv.org/pdf/2012.07372.pdf)
 
 
 ## Experiments
