@@ -237,6 +237,7 @@ with torch.no_grad():
          
          # averaging and normalizing all the d-vectors
          d_vect_out=torch.mean(dvects/dvects.norm(p=2, dim=1).view(-1,1),dim=0)
+
          
          # checks for nan
          nan_sum=torch.sum(torch.isnan(d_vect_out))
