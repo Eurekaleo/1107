@@ -250,7 +250,8 @@ with torch.no_grad():
          # saving the d-vector in a numpy dictionary
          dict_key=wav_lst_te[i].split('/')[-2]+'/'+wav_lst_te[i].split('/')[-1]
          d_vect_dict[dict_key]=d_vect_out.cpu().numpy()
-         print(dict_key)
+         print(d_vect_dict[dict_key].shape)
+         exit()
 
 # Save the dictionary
 np.save(out_dict_file, d_vect_dict)
