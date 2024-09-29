@@ -2,7 +2,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+from . import module_starGAN as md_starGAN
+# import module_starGAN as md_starGAN
 
 def init_weights(layer):
     """
@@ -195,6 +196,59 @@ class DiscriminatorMNIST(nn.Module):
         x = x.view(x.size(0), x.size(1) * x.size(2) * x.size(3))
         x = self._fc(x)
         # Return
+        return x
+
+# ----------------------------------------------------------------------------------------------------------------------
+# VC
+# ----------------------------------------------------------------------------------------------------------------------
+
+class ReconstructorVC(nn.Module):
+    """
+    Decoder Module.
+    """
+    def __init__(self, in_ch, n_spk, style_dim, mid_ch, class_dim, normtype='IN', src_conditioning=False):
+        # in_ch,    n_spk, z_ch, mid_ch, s_ch
+        # num_mels, n_spk, zdim, hdim,   sdim(class_dim)
+        # num_mels, # of speakers, dimension of bottleneck layer in generator, dimension of middle layers in generator, dimension of speaker embedding
+        super(ReconstructorVC, self).__init__()
+        self.register_parameter('word_dict', torch.nn.Parameter(torch.randn(size=(n_spk, class_dim))))
+
+        # Convolution, which is done in encoder
+        # self.le1 = md_starGAN.ConvGLU1D(in_ch+add_ch, mid_ch, 9, 1, normtype)
+        # self.le2 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 8, 2, normtype)
+        # self.le3 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 8, 2, normtype)
+        # self.le4 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 5, 1, normtype)
+        # self.le5 = md_starGAN.ConvGLU1D(mid_ch+add_ch, z_ch, 5, 1, normtype)
+
+        # Deconvolution
+        self.le6 = md_starGAN.DeconvGLU1D(style_dim+class_dim, mid_ch, 5, 1, normtype)
+        self.le7 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, mid_ch, 5, 1, normtype)
+        self.le8 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, mid_ch, 8, 2, normtype)
+        self.le9 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, mid_ch, 8, 2, normtype)
+        self.le10 = nn.Conv1d(mid_ch+class_dim, in_ch, 9, stride=1, padding=(9-1)//2)
+
+    def forward(self, style_emb, class_label):
+        # Get class dim
+        class_emb = torch.index_select(self.word_dict, dim=0, index=class_label)
+        # 2. Convolution
+        # class_emb = class_emb.unsqueeze(-1)
+        # print(class_emb.size())
+        # class_emb = class_emb.repeat(1, 1, 100)
+        # x = torch.cat((style_emb, class_emb), dim=1)
+        
+        # print(x.size())
+        x = md_starGAN.concat_dim1(style_emb,class_emb)
+        x = self.le6(x)
+        x = md_starGAN.concat_dim1(x,class_emb)
+        x = self.le7(x)
+        x = md_starGAN.concat_dim1(x,class_emb)
+        x = self.le8(x)
+        x = md_starGAN.concat_dim1(x,class_emb)
+        x = self.le9(x)
+        x = md_starGAN.concat_dim1(x,class_emb)
+        x = self.le10(x)
+
+        print(x.size())
         return x
 
 # ----------------------------------------------------------------------------------------------------------------------
