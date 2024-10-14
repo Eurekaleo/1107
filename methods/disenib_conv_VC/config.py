@@ -28,18 +28,28 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
     def _add_root_args(self):
         super(ConfigTrain, self)._add_root_args()
         # Dataset
-        self.parser.set(["dataset", "num_classes"], ["mnist", 10])
+        self.parser.set(["dataset", "num_classes"], ["timit", 630])
 
     def _add_tree_args(self, args_dict):
         ################################################################################################################
         # Datasets
         ################################################################################################################
+        # TIMIT Dataset specific arguments
+        self.parser.add_argument("--dataset_path",                  type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/output", help="Root directory of the TIMIT dataset")
+        self.parser.add_argument("--train_list",                    type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_train.scp")
+        self.parser.add_argument("--test_list",                     type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_test.scp")
+        self.parser.add_argument("--labels_list",                   type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_labels.npy")
         self.parser.add_argument("--dataset_shuffle",               type=int,   default=1,  choices=[0, 1])
         self.parser.add_argument("--dataset_num_threads",           type=int,   default=0)
         self.parser.add_argument("--dataset_drop_last",             type=bool,  default=True)
         ################################################################################################################
         # Others
         ################################################################################################################
+        self.parser.add_argument("--cw_len",                        type=int,   default=200)
+        self.parser.add_argument("--cw_shift",                      type=int,   default=10)
+        self.parser.add_argument("--fs",                            type=int,   default=16000)
+        self.parser.add_argument("--n_fft",                         type=int,   default=2048)
+        self.parser.add_argument("--hop_length",                    type=int,   default=512)
         self.parser.add_argument("--num_mels",                      type=int,   default=80)
         self.parser.add_argument("--style_dim",                     type=int,   default=16)
         self.parser.add_argument("--class_dim",                     type=int,   default=16)

@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from shared_libs.dataset_apis.classification import utils
 from shared_libs.dataset_apis.classification import transforms as custom_transforms
 from shared_libs.dataset_apis import __DATA_ROOT__
+import torchaudio
 
 
 ########################################################################################################################
@@ -151,3 +152,111 @@ class ImageMNIST(MNIST):
             transforms = torchvision.transforms.Compose(transforms)
         # Init
         super(ImageMNIST, self).__init__(*(mnist_paths(name)[phase]), transforms=transforms)
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# TIMIT
+# ----------------------------------------------------------------------------------------------------------------------
+
+
+import os
+import soundfile as sf
+import torch
+from torch.utils.data import Dataset
+import torch.nn.functional as F
+
+class TIMITDataset(BaseClassification):
+    """
+    TIMIT dataset
+    """
+    def __init__(self, phase, data_list, label_file, data_folder, cw_len, cw_shift, transforms=None):
+        assert phase in ['train', 'test']
+        self.phase = phase
+        self.data_folder = data_folder
+        self.transforms = transforms
+        self.wav_files = self._load_data_list(data_list)
+        self.labels = self._load_labels(label_file)
+        self.cw_len = cw_len
+        self.cw_shift = cw_shift
+        self.max_frames = 512 # add: max frame 512
+
+    def _load_data_list(self, data_list):
+        with open(data_list, 'r') as file:
+            wav_files = [line.strip() for line in file.readlines()]
+        return wav_files
+
+    def _load_labels(self, label_file):
+        data = np.load(label_file, allow_pickle=True)
+        return data.item() 
+
+    def __len__(self):
+        return len(self.wav_files)
+
+    def __getitem__(self, idx):
+        dir_path, file_name = os.path.split(self.wav_files[idx])
+        path_parts = dir_path.split(os.sep)
+        path_parts = [part.upper() if part.islower() else part for part in path_parts]
+        dir_path = os.path.join(*path_parts)
+        wav_path = os.path.join(self.data_folder, dir_path, file_name)
+
+        signal, fs = sf.read(wav_path)
+        # epsilon = 1e-8
+        # signal = signal / (np.max(np.abs(signal)) + epsilon)
+        signal = signal / np.max(np.abs(signal))
+        signal = torch.from_numpy(signal).float()
+
+        # segment signal into frames
+        wlen = int(fs * self.cw_len / 1000)  
+        wshift = int(fs * self.cw_shift / 1000) 
+
+        chunks = []
+        beg_samp = 0
+        end_samp = wlen
+        while end_samp <= signal.shape[0]:
+            chunk = signal[beg_samp:end_samp]
+            chunks.append(chunk)
+            beg_samp += wshift
+            end_samp = beg_samp + wlen
+
+        # padding the last chunk if necessary
+        if beg_samp < signal.shape[0]:
+            chunk = signal[beg_samp:]
+            padding = torch.zeros(wlen - chunk.shape[0])
+            chunk = torch.cat((chunk, padding))
+            chunks.append(chunk)
+
+        signal_chunks = torch.stack(chunks)
+
+        # padding -> 512 frames # 512, 3200 (same as cnn input dim)
+        if signal_chunks.size(0) < self.max_frames:
+            padding_frames = torch.zeros(self.max_frames - signal_chunks.size(0), wlen)
+            signal_chunks = torch.cat((signal_chunks, padding_frames), dim=0)
+
+        elif signal_chunks.size(0) > self.max_frames:
+            signal_chunks = signal_chunks[:self.max_frames] 
+
+        # mel_features: 
+        # if self.transforms:
+        #     signal_chunks = self.transforms(signal_chunks)
+        # signal_chunks = torch.mean(signal_chunks, dim=-1) # 512, 80, 7 -> 512, 80
+        
+        label = self.labels[self.wav_files[idx]] # integer
+        
+        # label = F.one_hot(torch.tensor(label), num_classes=630) # one-hot?
+        print(signal_chunks.size(), label) 
+
+        return signal_chunks, label
+
+        # signal, fs = sf.read(wav_path)
+        # signal = signal / np.max(np.abs(signal))  
+        # signal = torch.from_numpy(signal).float()
+
+        # if self.transforms:
+        #     signal = self.transforms(signal)
+
+        # label = self.labels[self.wav_files[idx]]
+        # print("TIMIT:", signal.size())
+        
+        # return signal, label
+
+

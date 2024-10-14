@@ -162,6 +162,7 @@ test_flag=1
 
 d_vector_dim=fc_lay[-1]
 d_vect_dict={}
+d_vect_frame_dict={}
 
    
 with torch.no_grad(): 
@@ -210,54 +211,61 @@ with torch.no_grad():
          end_samp=wlen
          
          N_fr=int((signal.shape[0]-wlen)/(wshift))
+         print(N_fr)
          
         
          sig_arr=torch.zeros([Batch_dev,wlen]).float().to(device).contiguous()
-         dvects=Variable(torch.zeros(N_fr,d_vector_dim).float().to(device).contiguous())
+         dvects=Variable(torch.zeros(512,d_vector_dim).float().to(device).contiguous())
          count_fr=0
          count_fr_tot=0
-         while end_samp<signal.shape[0]:
-             sig_arr[count_fr,:]=signal[beg_samp:end_samp]
-             beg_samp=beg_samp+wshift
-             end_samp=beg_samp+wlen
-             count_fr=count_fr+1
-             count_fr_tot=count_fr_tot+1
-             if count_fr==Batch_dev:
-                 inp=Variable(sig_arr)
-                 dvects[count_fr_tot-Batch_dev:count_fr_tot,:]=DNN1_net(CNN_net(inp))
-                 count_fr=0
-                 sig_arr=torch.zeros([Batch_dev,wlen]).float().to(device).contiguous()
+         while end_samp<signal.shape[0] and count_fr < 512:
+            sig_arr[count_fr,:]=signal[beg_samp:end_samp]
+            beg_samp=beg_samp+wshift
+            end_samp=beg_samp+wlen
+            count_fr=count_fr+1
+            count_fr_tot=count_fr_tot+1
+            if count_fr==Batch_dev:
+                inp=Variable(sig_arr)
+                dvects[count_fr_tot-Batch_dev:count_fr_tot,:]=DNN1_net(CNN_net(inp))
+                count_fr=0
+                sig_arr=torch.zeros([Batch_dev,wlen]).float().to(device).contiguous()
+
            
          if count_fr>0:
           inp=Variable(sig_arr[0:count_fr])
           dvects[count_fr_tot-count_fr:count_fr_tot,:]=DNN1_net(CNN_net(inp))
         
-         if avoid_small_en_fr:
-             dvects=dvects.index_select(0, (en_arr_bin==1).nonzero().view(-1))
+        #  if avoid_small_en_fr:
+        #      dvects=dvects.index_select(0, (en_arr_bin==1).nonzero().view(-1))
          
          # averaging and normalizing all the d-vectors
-         d_vect_out=torch.mean(dvects/dvects.norm(p=2, dim=1).view(-1,1),dim=0)
-
+         print(dvects.shape)    
+         print(dvects)
+        #  d_vect_out=torch.mean(dvects/dvects.norm(p=2, dim=1).view(-1,1),dim=0)
+        #  print(d_vect_out)
+        #  print(d_vect_out.shape)
+        #  exit()
+         
          
          # checks for nan
-         nan_sum=torch.sum(torch.isnan(d_vect_out))
+        #  nan_sum=torch.sum(torch.isnan(d_vect_out))
 
-         if nan_sum>0:
-             print(wav_lst_te[i])
-             sys.exit(0)
+        #  if nan_sum>0:
+        #      print(wav_lst_te[i])
+        #      sys.exit(0)
 
          
          # saving the d-vector in a numpy dictionary
          dict_key=wav_lst_te[i].split('/')[-2]+'/'+wav_lst_te[i].split('/')[-1]
-         d_vect_dict[dict_key]=d_vect_out.cpu().numpy()
-         print(d_vect_dict[dict_key].shape)
-         exit()
+         print(dict_key)
+        #  d_vect_dict[dict_key]=d_vect_out.cpu().numpy()
+         d_vect_frame_dict[dict_key]=dvects.cpu().numpy()
 
 # Save the dictionary
 np.save(out_dict_file, d_vect_dict)
+np.save(out_dict_file+'_frame', d_vect_frame_dict)
          
     
     
-
 
 

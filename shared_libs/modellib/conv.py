@@ -3,6 +3,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from . import module_starGAN as md_starGAN
+from .dnn_models import SincNet as CNN 
+from .dnn_models import MLP
 # import module_starGAN as md_starGAN
 
 def init_weights(layer):
@@ -201,6 +203,105 @@ class DiscriminatorMNIST(nn.Module):
 # ----------------------------------------------------------------------------------------------------------------------
 # VC
 # ----------------------------------------------------------------------------------------------------------------------
+import torch.nn.functional as F
+
+import torch
+import torch.nn as nn
+
+class EncoderTIMIT(nn.Module):
+    def __init__(self, nz):
+        super(EncoderTIMIT, self).__init__()
+
+        # wlen = 3200 # 16000/200 = 3200
+        fs = 16000
+        # cnn_N_filt = [20, 10, 10] # cnn_N_filt = [80, 60, 60]
+        cnn_N_filt = [80, 60, 60]
+        # cnn_len_filt = [32, 8, 6] # cnn_len_filt = [251, 5, 5]
+        cnn_len_filt = [251, 5, 5]
+        # cnn_max_pool_len = [2, 2, 2] # cnn_max_pool_len = [3, 3, 3]
+        cnn_max_pool_len = [3, 3, 3]
+        cnn_use_laynorm_inp = True
+        cnn_use_batchnorm_inp = False
+        cnn_use_laynorm = [True, True, True]
+        cnn_use_batchnorm = [False, False, False]
+        cnn_act = ['leaky_relu', 'leaky_relu', 'leaky_relu']
+        cnn_drop = [0.0, 0.0, 0.0]
+        
+        self.cnn_arch = {
+            'input_dim': 3200, # mel: 80
+            'fs': fs,
+            'cnn_N_filt': cnn_N_filt,
+            'cnn_len_filt': cnn_len_filt,
+            'cnn_max_pool_len': cnn_max_pool_len,
+            'cnn_use_laynorm_inp': cnn_use_laynorm_inp,
+            'cnn_use_batchnorm_inp': cnn_use_batchnorm_inp,
+            'cnn_use_laynorm': cnn_use_laynorm,
+            'cnn_use_batchnorm': cnn_use_batchnorm,
+            'cnn_act': cnn_act,
+            'cnn_drop': cnn_drop
+        }
+
+        fc_lay = [2048, 2048, nz] # fc_lay = [2048, 2048, 2048]
+        fc_drop = [0.0, 0.0, 0.0]
+        fc_use_laynorm_inp = True
+        fc_use_batchnorm_inp = False
+        fc_use_batchnorm = [True, True, True]
+        fc_use_laynorm = [False, False, False]
+        fc_act = ['leaky_relu', 'leaky_relu', 'leaky_relu']
+
+        self.dnn1_arch = {
+            'input_dim': cnn_N_filt[-1],  
+            'fc_lay': fc_lay,
+            'fc_drop': fc_drop,
+            'fc_use_batchnorm': fc_use_batchnorm,
+            'fc_use_laynorm': fc_use_laynorm,
+            'fc_use_laynorm_inp': fc_use_laynorm_inp,
+            'fc_use_batchnorm_inp': fc_use_batchnorm_inp,
+            'fc_act': fc_act
+        }
+
+        self.cnn_net = CNN(self.cnn_arch)
+        self.dnn1_net = MLP(self.dnn1_arch)
+
+        self.d_vector_dim = nz
+
+    def forward(self, signal_chunks):
+        
+        batch_size, num_frames, features = signal_chunks.size()  # [64, 512, 3200] (batch_size, frames_nums, features)
+        signal_chunks = signal_chunks.view(batch_size * num_frames, features)  # (batch_size*num_frames, features)
+        print("signal_chunks:", signal_chunks) 
+        print("signal_chunks_size:", signal_chunks.size()) # [32768, 3200] (3200, cnn_arch input dim, from TIMITDataset)
+       
+        cnn_out = self.cnn_net(signal_chunks)
+        print("cnn_out:",cnn_out)
+        print("cnn_out_size:", cnn_out.size()) # 32768, 60 (10, dnn1_arch input dim)
+        
+        d_vectors = self.dnn1_net(cnn_out)
+        print("d_vectors:", d_vectors)
+        print("d_vectors_size:", d_vectors.size()) # 32768, 16 (16, d_vectors size, configs: style_dim / class_dim )
+                    
+        d_vectors = d_vectors.view(batch_size, num_frames, self.d_vector_dim) # [batch_size, num_frames, d_vector_dim]
+        print("d_vectors:", d_vectors)
+        print("d_vectors_size:", d_vectors.size()) # 64, 512, 16        
+        
+        # batch_size, num_frames, mel_features = signal_chunks.size()  # [64, 512, 80] (7, mean in datasets)
+        # signal_chunks = signal_chunks.view(batch_size * num_frames, mel_features)  # [batch_size*num_frames, mel_features*extra_dim]
+        # print("signal_chunks:", signal_chunks) 
+        # print("signal_chunks_size:", signal_chunks.size()) # 32768, 80 (80, cnn_arch input dim)
+       
+        # cnn_out = self.cnn_net(signal_chunks)
+        # print("cnn_out:",cnn_out)
+        # print("cnn_out_size:", cnn_out.size()) # 32768, 10 (10, dnn1_arch input dim)
+        
+        # d_vectors = self.dnn1_net(cnn_out)
+        # print("d_vectors:", d_vectors)
+        # print("d_vectors_size:", d_vectors.size()) # 32768, 16 (16, d_vectors size, configs: style_dim / class_dim )
+                    
+        # d_vectors = d_vectors.view(batch_size, num_frames, self.d_vector_dim) # [batch_size, num_frames, d_vector_dim]
+        # print("d_vectors:", d_vectors)
+        # print("d_vectors_size:", d_vectors.size()) # 64, 512, 16         
+        
+        return d_vectors
 
 class ReconstructorVC(nn.Module):
     """

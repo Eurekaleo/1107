@@ -1,0 +1,57 @@
+2024-10-06 15:55:20,763 - 
+=============================================================================================================================
+batch_size                                        : 64                            
+class_dim                                         : 16                            
+class_std                                         : 1.0                           
+dataset                                           : timit                         
+dataset_drop_last                                 : True                          
+dataset_num_threads                               : 0                             
+dataset_path                                      : /home/cuizhouying/CS4347/CS4347/d_vector_SincNet/output
+dataset_shuffle                                   : 1                             
+device                                            : cuda                          
+disc_limit_acc                                    : 0.8                           
+disc_thr                                          : 1000                          
+emb_radius                                        : 3.0                           
+est_batch_size                                    : 64                            
+est_class_std                                     : 0.1                           
+est_style_optimize                                : 4                             
+est_style_std                                     : 0.1                           
+est_thr                                           : 3000                          
+eval_dis_n_samples                                : 10                            
+freq_iter_log                                     : 4096                          
+freq_step_chkpt                                   : 1000                          
+freq_step_eval                                    : 500                           
+gpu_ids                                           : 0                             
+hop_length                                        : 512                           
+labels_list                                       : /home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_labels.npy
+lambda_dec                                        : 1.0                           
+lambda_disc                                       : 0.1                           
+lambda_est                                        : 0.5                           
+lambda_est_zc                                     : 0.05                          
+lambda_rec                                        : 10.0                          
+lambda_wall                                       : 10.0                          
+learning_rate                                     : 0.0001                        
+load_from                                         : -1                            
+mid_ch                                            : 64                            
+n_fft                                             : 2048                          
+n_times_disc                                      : 1                             
+n_times_est                                       : 1                             
+n_times_main                                      : 10                            
+num_classes                                       : 63                            
+num_mels                                          : 80                            
+rand_seed                                         : 8445                          
+sample_rate                                       : 16000                         
+steps                                             : 20000                         
+style_dim                                         : 16                            
+style_std                                         : 0.1                           
+test_list                                         : /home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_test.scp
+train_list                                        : /home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_train.scp
+=============================================================================================================================
+2024-10-06 15:55:20,763 - Dataset[train] size: 2310. 
+2024-10-06 15:55:20,763 - Dataset[train_est] size: 2310. 
+2024-10-06 15:55:20,763 - Network[Enc_style] total number of parameters : 1.752 M. 
+2024-10-06 15:55:20,763 - Network[Enc_class] total number of parameters : 1.752 M. 
+2024-10-06 15:55:20,764 - Network[Dec] total number of parameters : 0.001 M. 
+2024-10-06 15:55:20,764 - Network[Rec] total number of parameters : 0.295 M. 
+2024-10-06 15:55:20,764 - Network[Est] total number of parameters : 0.136 M. 
+2024-10-06 15:55:20,764 - Network[Disc] total number of parameters : 0.258 M. 

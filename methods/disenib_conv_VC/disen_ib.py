@@ -11,22 +11,41 @@ from shared_libs.custom_packages.custom_basic.metrics import FreqCounter, Trigge
 from shared_libs.custom_packages.custom_pytorch.operations import summarize_losses_and_backward, set_requires_grad
 import numpy as np
 
+# class DisenIB(IterativeBaseModel):
+#     """
+#     Disentangled IB model.
+#     """
+#     def _build_architectures(self, **modules):
+#         super(DisenIB, self)._build_architectures(
+#             # Encoder, decoder, reconstructor, estimator
+#             # Encoder: Enc_style for extracting style info (can use d-vector) & Enc_class for extracting class info (e.g. label for MNIST)
+            
+#             Enc_style=EncoderMNIST(self._cfg.args.style_dim), Enc_class=EncoderMNIST(self._cfg.args.class_dim),
+#             # num_mels 设的80
+#             Dec=Decoder(self._cfg.args.class_dim, self._cfg.args.num_classes),
+#             Rec=ReconstructorVC(self._cfg.args.num_mels, self._cfg.args.num_classes, self._cfg.args.style_dim, self._cfg.args.mid_ch, self._cfg.args.class_dim),
+#             Est=DensityEstimator(self._cfg.args.style_dim, self._cfg.args.class_dim),
+#             # Discriminator for improving generated quality
+#             Disc=DiscriminatorMNIST())
+
 class DisenIB(IterativeBaseModel):
     """
-    Disentangled IB model.
+    Disentangled IB model modified for TIMIT audio data.
     """
     def _build_architectures(self, **modules):
         super(DisenIB, self)._build_architectures(
             # Encoder, decoder, reconstructor, estimator
-            # Encoder: Enc_style for extracting style info (can use d-vector) & Enc_class for extracting class info (e.g. label for MNIST)
+            # Encoder: Enc_style for extracting style info (can use d-vector) & Enc_class for extracting class info (e.g. label for TIMIT)
             
-            Enc_style=EncoderMNIST(self._cfg.args.style_dim), Enc_class=EncoderMNIST(self._cfg.args.class_dim),
-            # num_mels 设的80
+            Enc_style=EncoderTIMIT(self._cfg.args.style_dim),  # Updated for TIMIT, 16
+            Enc_class=EncoderTIMIT(self._cfg.args.class_dim),  # Updated for TIMIT, 16
+            # num_mels set to 80
             Dec=Decoder(self._cfg.args.class_dim, self._cfg.args.num_classes),
             Rec=ReconstructorVC(self._cfg.args.num_mels, self._cfg.args.num_classes, self._cfg.args.style_dim, self._cfg.args.mid_ch, self._cfg.args.class_dim),
             Est=DensityEstimator(self._cfg.args.style_dim, self._cfg.args.class_dim),
-            # Discriminator for improving generated quality
-            Disc=DiscriminatorMNIST())
+            # Discriminator (update as needed for TIMIT)
+            Disc=DiscriminatorMNIST()
+        )
 
     def _set_criterions(self):
         self._criterions['dec'] = CrossEntropyLoss(lmd=self._cfg.args.lambda_dec)
@@ -67,7 +86,7 @@ class DisenIB(IterativeBaseModel):
         # Main
         ################################################################################################################
         for _ in range(self._cfg.args.n_times_main):
-            # audios, label = self._fetch_batch_data()
+            audios, label = self._fetch_batch_data() 
             # Clear grad
             set_requires_grad([self._Enc_style, self._Enc_class, self._Dec, self._Rec], requires_grad=True)
             set_requires_grad([self._Disc, self._Est], requires_grad=False)
@@ -75,15 +94,20 @@ class DisenIB(IterativeBaseModel):
             # ----------------------------------------------------------------------------------------------------------
             # Decoding & reconstruction
             # ----------------------------------------------------------------------------------------------------------
-            # style_emb, class_emb = self._Enc_style(audios), self._Enc_class(audios)
-            style_emb = torch.randn(self._cfg.args.batch_size, self._cfg.args.style_dim, 100).to(self._cfg.args.device)
-            class_emb = torch.randn(self._cfg.args.batch_size, self._cfg.args.class_dim).to(self._cfg.args.device)
-            label = torch.from_numpy(np.array([0] * self._cfg.args.batch_size)).to(self._cfg.args.device, dtype=torch.int64)
-            audios = torch.randn(self._cfg.args.batch_size, self._cfg.args.num_mels, 400).to(self._cfg.args.device)
+            # style_emb = torch.randn(self._cfg.args.batch_size, self._cfg.args.style_dim, 100).to(self._cfg.args.device) # 64, 16. 100
+            # class_emb = torch.randn(self._cfg.args.batch_size, self._cfg.args.class_dim).to(self._cfg.args.device) # 64, 16 
+            # label = torch.from_numpy(np.array([0] * self._cfg.args.batch_size)).to(self._cfg.args.device, dtype=torch.int64) # 64
+            # audios = torch.randn(self._cfg.args.batch_size, self._cfg.args.num_mels, 400).to(self._cfg.args.device) # 64, 80, 400
+
+            style_emb, class_emb = self._Enc_style(audios), self._Enc_class(audios)
+            # print("style_emb:", class_emb)
+            
             # 1. Decoding: use class embedding(from encoder), to generate the label (speaker ID).
             # Optimized towards the ground truth label(speaker ID).
+  
             dec_output = self._Dec(resampling(class_emb, self._cfg.args.class_std))
-            loss_dec = self._criterions['dec'](dec_output, label)
+            loss_dec = self._criterions['dec'](dec_output, label)            
+
             # 2. Reconstruction: use style embedding(from encoder) and ground truth label(speaker ID), to reconstruct an audio.
             # Optimized towards the target audio.
             rec_output = self._Rec(resampling(style_emb, self._cfg.args.style_std), label)
