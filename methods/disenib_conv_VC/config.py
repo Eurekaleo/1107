@@ -35,14 +35,15 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
         # Datasets
         ################################################################################################################
         # TIMIT Dataset specific arguments
-        self.parser.add_argument("--dataset_path",                  type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/output", help="Root directory of the TIMIT dataset")
-        self.parser.add_argument("--train_list",                    type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_train.scp")
-        self.parser.add_argument("--test_list",                     type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_test.scp")
-        self.parser.add_argument("--labels_list",                   type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_labels.npy")
+        self.parser.add_argument("--dataset_path",                  type=str,   default="./output", help="Root directory of the TIMIT dataset")
+        self.parser.add_argument("--train_list",                    type=str,   default="./data_lists/TIMIT_train.scp")
+        self.parser.add_argument("--test_list",                     type=str,   default="./data_lists/TIMIT_test.scp")
+        self.parser.add_argument("--labels_list",                   type=str,   default="./data_lists/TIMIT_labels.npy")
         self.parser.add_argument("--dataset_shuffle",               type=int,   default=1,  choices=[0, 1])
         self.parser.add_argument("--dataset_num_threads",           type=int,   default=0)
         self.parser.add_argument("--dataset_drop_last",             type=bool,  default=True)
-        ################################################################################################################
+        ##########################################################################################################
+        # ######
         # Others
         ################################################################################################################
         self.parser.add_argument("--cw_len",                        type=int,   default=200)
@@ -64,7 +65,7 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
         self.parser.add_argument("--disc_thr",                      type=int,   default=1000)
         self.parser.add_argument("--disc_limit_acc",                type=float, default=0.8)
         self.parser.add_argument("--est_thr",                       type=int,   default=3000)
-        self.parser.add_argument("--est_batch_size",                type=int,   default=64)
+        self.parser.add_argument("--est_batch_size",                type=int,   default=2)
         self.parser.add_argument("--est_style_std",                 type=float, default=0.1)
         self.parser.add_argument("--est_class_std",                 type=float, default=0.1)
         self.parser.add_argument("--est_style_optimize",            type=int,   default=4)
@@ -81,7 +82,7 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
     def _add_additional_args(self):
         # Epochs & batch size
         self.parser.add_argument("--steps",                         type=int,   default=20000)
-        self.parser.add_argument("--batch_size",                    type=int,   default=64)
+        self.parser.add_argument("--batch_size",                    type=int,   default=2)
         # Learning rate
         self.parser.add_argument("--learning_rate",                 type=float, default=0.0001)
         # Frequency

@@ -1,0 +1,59 @@
+2024-10-20 13:13:43,371 - 
+=============================================================================================================================
+batch_size                                        : 32                            
+class_dim                                         : 16                            
+class_std                                         : 1.0                           
+cw_len                                            : 200                           
+cw_shift                                          : 10                            
+dataset                                           : timit                         
+dataset_drop_last                                 : True                          
+dataset_num_threads                               : 0                             
+dataset_path                                      : ./output                      
+dataset_shuffle                                   : 1                             
+device                                            : cuda                          
+disc_limit_acc                                    : 0.8                           
+disc_thr                                          : 1000                          
+emb_radius                                        : 3.0                           
+est_batch_size                                    : 32                            
+est_class_std                                     : 0.1                           
+est_style_optimize                                : 4                             
+est_style_std                                     : 0.1                           
+est_thr                                           : 3000                          
+eval_dis_n_samples                                : 10                            
+freq_iter_log                                     : 4096                          
+freq_step_chkpt                                   : 1000                          
+freq_step_eval                                    : 500                           
+fs                                                : 16000                         
+gpu_ids                                           : 0                             
+hop_length                                        : 512                           
+labels_list                                       : ./data_lists/TIMIT_labels.npy 
+lambda_dec                                        : 1.0                           
+lambda_disc                                       : 0.1                           
+lambda_est                                        : 0.5                           
+lambda_est_zc                                     : 0.05                          
+lambda_rec                                        : 10.0                          
+lambda_wall                                       : 10.0                          
+learning_rate                                     : 0.0001                        
+load_from                                         : -1                            
+mid_ch                                            : 64                            
+n_fft                                             : 2048                          
+n_times_disc                                      : 1                             
+n_times_est                                       : 1                             
+n_times_main                                      : 10                            
+num_classes                                       : 630                           
+num_mels                                          : 80                            
+rand_seed                                         : 4650                          
+steps                                             : 20000                         
+style_dim                                         : 16                            
+style_std                                         : 0.1                           
+test_list                                         : ./data_lists/TIMIT_test.scp   
+train_list                                        : ./data_lists/TIMIT_train.scp  
+=============================================================================================================================
+2024-10-20 13:13:43,383 - Dataset[train] size: 2310. 
+2024-10-20 13:13:43,383 - Dataset[train_est] size: 2310. 
+2024-10-20 13:13:43,383 - Network[Enc_style] total number of parameters : 4.629 M. 
+2024-10-20 13:13:43,384 - Network[Enc_class] total number of parameters : 4.629 M. 
+2024-10-20 13:13:43,384 - Network[Dec] total number of parameters : 0.010 M. 
+2024-10-20 13:13:43,384 - Network[Rec] total number of parameters : 0.304 M. 
+2024-10-20 13:13:43,384 - Network[Est] total number of parameters : 0.136 M. 
+2024-10-20 13:13:43,385 - Network[Disc] total number of parameters : 0.258 M. 

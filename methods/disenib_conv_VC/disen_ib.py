@@ -106,6 +106,7 @@ class DisenIB(IterativeBaseModel):
             # Optimized towards the ground truth label(speaker ID).
   
             dec_output = self._Dec(resampling(class_emb, self._cfg.args.class_std))
+            print(dec_output.size(), label.size())
             loss_dec = self._criterions['dec'](dec_output, label)            
 
             # 2. Reconstruction: use style embedding(from encoder) and ground truth label(speaker ID), to reconstruct an audio.

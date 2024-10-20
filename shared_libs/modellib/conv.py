@@ -212,7 +212,7 @@ class EncoderTIMIT(nn.Module):
     def __init__(self, nz):
         super(EncoderTIMIT, self).__init__()
 
-        # wlen = 3200 # 16000/200 = 3200
+        # wlen = 3200 # 16000*200/1000 = 3200
         fs = 16000
         # cnn_N_filt = [20, 10, 10] # cnn_N_filt = [80, 60, 60]
         cnn_N_filt = [80, 60, 60]
@@ -240,6 +240,8 @@ class EncoderTIMIT(nn.Module):
             'cnn_act': cnn_act,
             'cnn_drop': cnn_drop
         }
+                
+        self.cnn_net = CNN(self.cnn_arch)
 
         fc_lay = [2048, 2048, nz] # fc_lay = [2048, 2048, 2048]
         fc_drop = [0.0, 0.0, 0.0]
@@ -250,7 +252,7 @@ class EncoderTIMIT(nn.Module):
         fc_act = ['leaky_relu', 'leaky_relu', 'leaky_relu']
 
         self.dnn1_arch = {
-            'input_dim': cnn_N_filt[-1],  
+            'input_dim':self.cnn_net.out_dim,
             'fc_lay': fc_lay,
             'fc_drop': fc_drop,
             'fc_use_batchnorm': fc_use_batchnorm,
@@ -260,7 +262,7 @@ class EncoderTIMIT(nn.Module):
             'fc_act': fc_act
         }
 
-        self.cnn_net = CNN(self.cnn_arch)
+        
         self.dnn1_net = MLP(self.dnn1_arch)
 
         self.d_vector_dim = nz
