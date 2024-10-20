@@ -42,7 +42,10 @@ class Decoder(nn.Module):
         self.apply(init_weights)
 
     def forward(self, emb):
-        return self._fc(emb)
+        output = self._fc(emb)
+        # average output on dim 1 (time axis)
+        output = output.mean(dim=1)
+        return output
 
 
 class DensityEstimator(nn.Module):
