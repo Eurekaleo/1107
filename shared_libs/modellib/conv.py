@@ -72,6 +72,8 @@ class DensityEstimator(nn.Module):
         self.apply(init_weights)
 
     def _call_method(self, style_emb, class_emb):
+        print("style_emb.size():", style_emb.size())
+        print("class_emb.size():", class_emb.size())
         style_emb = self._fc_style(style_emb)
         class_emb = self._fc_class(class_emb)
         return self._fc_blocks(torch.cat([style_emb, class_emb], dim=1))
