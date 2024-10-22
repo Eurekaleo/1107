@@ -65,7 +65,7 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
         self.parser.add_argument("--disc_thr",                      type=int,   default=1000)
         self.parser.add_argument("--disc_limit_acc",                type=float, default=0.8)
         self.parser.add_argument("--est_thr",                       type=int,   default=3000)
-        self.parser.add_argument("--est_batch_size",                type=int,   default=2)
+        self.parser.add_argument("--est_batch_size",                type=int,   default=10)
         self.parser.add_argument("--est_style_std",                 type=float, default=0.1)
         self.parser.add_argument("--est_class_std",                 type=float, default=0.1)
         self.parser.add_argument("--est_style_optimize",            type=int,   default=4)
@@ -82,9 +82,9 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
     def _add_additional_args(self):
         # Epochs & batch size
         self.parser.add_argument("--steps",                         type=int,   default=20000)
-        self.parser.add_argument("--batch_size",                    type=int,   default=2)
+        self.parser.add_argument("--batch_size",                    type=int,   default=10)
         # Learning rate
         self.parser.add_argument("--learning_rate",                 type=float, default=0.0001)
         # Frequency
-        self.parser.add_argument("--freq_iter_log",                 type=int,   default=4096)
-        self.parser.add_argument("--freq_step_chkpt",               type=int,   default=1000)
+        self.parser.add_argument("--freq_iter_log",                 type=int,   default=10)
+        self.parser.add_argument("--freq_step_chkpt",               type=int,   default=100)

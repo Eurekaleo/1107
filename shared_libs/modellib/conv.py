@@ -380,7 +380,7 @@ class DiscriminatorVC(nn.Module):
         # (1) Convolution
         self._conv_blocks = nn.Sequential(
             # Layer 1
-            nn.Conv2d(in_channels=2, out_channels=32, kernel_size=5, stride=2, padding=1, bias=True),
+            nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5, stride=2, padding=1, bias=True),
             nn.InstanceNorm2d(num_features=32, track_running_stats=True),
             nn.LeakyReLU(negative_slope=0.2, inplace=True),
             # Layer 2
@@ -392,18 +392,18 @@ class DiscriminatorVC(nn.Module):
             nn.InstanceNorm2d(num_features=128, track_running_stats=True),
             nn.LeakyReLU(negative_slope=0.2, inplace=True))
         # (2) FC
-        self._fc = nn.Linear(in_features=2457, out_features=2, bias=True)
+        self._fc = nn.Linear(in_features=314496, out_features=2, bias=True)
         # 2. Init weights
         self.apply(init_weights)
 
     def forward(self, x):
         # 1. Convolution
         # print("Before conv_blocks, x.size():", x.size())
+        x = x.unsqueeze(1)
         x = self._conv_blocks(x)
         # print("After conv_blocks, x.size():", x.size())
         # 2. FC
-        # x = x.view(x.size(0), x.size(1) * x.size(2) * x.size(3))
-        x = x.view(x.size(0), x.size(1) * x.size(2))
+        x = x.view(x.size(0), x.size(1) * x.size(2) * x.size(3))
         # print("After view, x.size():", x.size())
         x = self._fc(x)
         # print("After fc, x.size():", x.size())
