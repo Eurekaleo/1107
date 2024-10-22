@@ -208,7 +208,7 @@ class DisenIB(IterativeBaseModel):
             # 1. Get disc_output
             disc_output_real = self._Disc(audios)
             style_emb = resampling(self._Enc_style(audios), self._cfg.args.style_std)
-            disc_output_fake = self._Disc(self._Rec(style_emb, label).detach())
+            disc_output_fake = self._Disc(self._Rec(style_emb.transpose(1, 2), label).detach())
             # 2. Calculate loss
             crit_disc_real = self._criterions['disc'](disc_output_real, True, lmd=1.0)
             crit_disc_fake = self._criterions['disc'](disc_output_fake, False, lmd=1.0)
