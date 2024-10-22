@@ -44,7 +44,7 @@ class DisenIB(IterativeBaseModel):
             Rec=ReconstructorVC(self._cfg.args.num_mels, self._cfg.args.num_classes, self._cfg.args.style_dim, self._cfg.args.mid_ch, self._cfg.args.class_dim),
             Est=DensityEstimator(self._cfg.args.style_dim, self._cfg.args.class_dim),
             # Discriminator (update as needed for TIMIT)
-            Disc=DiscriminatorMNIST()
+            Disc=DiscriminatorVC()
         )
 
     def _set_criterions(self):

@@ -76,7 +76,10 @@ class DensityEstimator(nn.Module):
         print("class_emb.size():", class_emb.size())
         style_emb = self._fc_style(style_emb)
         class_emb = self._fc_class(class_emb)
-        return self._fc_blocks(torch.cat([style_emb, class_emb], dim=1))
+        print("After fc_style, style_emb.size():", style_emb.size())
+        print("After fc_class, class_emb.size():", class_emb.size())
+        print("torch.cat([style_emb, class_emb]).size():", torch.cat([style_emb, class_emb], dim=2).size())
+        return self._fc_blocks(torch.cat([style_emb, class_emb], dim=2))
 
     def forward(self, style_emb, class_emb, mode):
         assert mode in ['orig', 'perm']
@@ -365,6 +368,41 @@ class ReconstructorVC(nn.Module):
         x = md_starGAN.concat_dim1(x,class_emb)
         x = self.le10(x)
         print("After le10, x.size():", x.size())
+        return x
+
+class DiscriminatorVC(nn.Module):
+    """
+    Discriminator Module.
+    """
+    def __init__(self):
+        super(DiscriminatorVC, self).__init__()
+        # 1. Architecture
+        # (1) Convolution
+        self._conv_blocks = nn.Sequential(
+            # Layer 1
+            nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5, stride=2, padding=1, bias=True),
+            nn.InstanceNorm2d(num_features=32, track_running_stats=True),
+            nn.LeakyReLU(negative_slope=0.2, inplace=True),
+            # Layer 2
+            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=5, stride=2, padding=1, bias=True),
+            nn.InstanceNorm2d(num_features=64, track_running_stats=True),
+            nn.LeakyReLU(negative_slope=0.2, inplace=True),
+            # Layer 3
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5, stride=2, padding=1, bias=True),
+            nn.InstanceNorm2d(num_features=128, track_running_stats=True),
+            nn.LeakyReLU(negative_slope=0.2, inplace=True))
+        # (2) FC
+        self._fc = nn.Linear(in_features=512, out_features=2, bias=True)
+        # 2. Init weights
+        self.apply(init_weights)
+
+    def forward(self, x):
+        # 1. Convolution
+        x = self._conv_blocks(x)
+        # 2. FC
+        x = x.view(x.size(0), x.size(1) * x.size(2) * x.size(3))
+        x = self._fc(x)
+        # Return
         return x
 
 # ----------------------------------------------------------------------------------------------------------------------
