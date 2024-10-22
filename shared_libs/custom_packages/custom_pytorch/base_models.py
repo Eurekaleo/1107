@@ -493,6 +493,7 @@ class IterativeBaseModel(BaseModel):
         # 2. Main
         while self._meters['i'][iter_marker] < iter_max:
             # 1. Train
+            print("iter:", self._meters['i'][iter_marker])
             with self._meters['timers']('opt', void=chk_d(kwargs, 'dis_t_opt')):
                 self._set_to_train_mode()
                 self._train_step(packs)

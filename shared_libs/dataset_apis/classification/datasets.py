@@ -243,7 +243,7 @@ class TIMITDataset(BaseClassification):
         label = self.labels[self.wav_files[idx]] # integer
         
         # label = F.one_hot(torch.tensor(label), num_classes=630) # one-hot?
-        print(signal_chunks.size(), label) 
+        # print(signal_chunks.size(), label) 
 
         return signal_chunks, label
 

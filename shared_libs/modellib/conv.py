@@ -72,13 +72,13 @@ class DensityEstimator(nn.Module):
         self.apply(init_weights)
 
     def _call_method(self, style_emb, class_emb):
-        print("style_emb.size():", style_emb.size())
-        print("class_emb.size():", class_emb.size())
+        # print("style_emb.size():", style_emb.size())
+        # print("class_emb.size():", class_emb.size())
         style_emb = self._fc_style(style_emb)
         class_emb = self._fc_class(class_emb)
-        print("After fc_style, style_emb.size():", style_emb.size())
-        print("After fc_class, class_emb.size():", class_emb.size())
-        print("torch.cat([style_emb, class_emb]).size():", torch.cat([style_emb, class_emb], dim=2).size())
+        # print("After fc_style, style_emb.size():", style_emb.size())
+        # print("After fc_class, class_emb.size():", class_emb.size())
+        # print("torch.cat([style_emb, class_emb]).size():", torch.cat([style_emb, class_emb], dim=2).size())
         return self._fc_blocks(torch.cat([style_emb, class_emb], dim=2))
 
     def forward(self, style_emb, class_emb, mode):
@@ -280,20 +280,20 @@ class EncoderTIMIT(nn.Module):
         
         batch_size, num_frames, features = signal_chunks.size()  # [64, 512, 3200] (batch_size, frames_nums, features)
         signal_chunks = signal_chunks.view(batch_size * num_frames, features)  # (batch_size*num_frames, features)
-        print("signal_chunks:", signal_chunks) 
-        print("signal_chunks_size:", signal_chunks.size()) # [32768, 3200] (3200, cnn_arch input dim, from TIMITDataset)
+        # print("signal_chunks:", signal_chunks) 
+        # print("signal_chunks_size:", signal_chunks.size()) # [32768, 3200] (3200, cnn_arch input dim, from TIMITDataset)
        
         cnn_out = self.cnn_net(signal_chunks)
-        print("cnn_out:",cnn_out)
-        print("cnn_out_size:", cnn_out.size()) # 32768, 60 (10, dnn1_arch input dim)
+        # print("cnn_out:",cnn_out)
+        # print("cnn_out_size:", cnn_out.size()) # 32768, 60 (10, dnn1_arch input dim)
         
         d_vectors = self.dnn1_net(cnn_out)
-        print("d_vectors:", d_vectors)
-        print("d_vectors_size:", d_vectors.size()) # 32768, 16 (16, d_vectors size, configs: style_dim / class_dim )
+        # print("d_vectors:", d_vectors)
+        # print("d_vectors_size:", d_vectors.size()) # 32768, 16 (16, d_vectors size, configs: style_dim / class_dim )
                     
         d_vectors = d_vectors.view(batch_size, num_frames, self.d_vector_dim) # [batch_size, num_frames, d_vector_dim]
-        print("d_vectors:", d_vectors)
-        print("d_vectors_size:", d_vectors.size()) # 64, 512, 16        
+        # print("d_vectors:", d_vectors)
+        # print("d_vectors_size:", d_vectors.size()) # 64, 512, 16        
         
         # batch_size, num_frames, mel_features = signal_chunks.size()  # [64, 512, 80] (7, mean in datasets)
         # signal_chunks = signal_chunks.view(batch_size * num_frames, mel_features)  # [batch_size*num_frames, mel_features*extra_dim]
@@ -348,26 +348,26 @@ class ReconstructorVC(nn.Module):
         # class_emb = class_emb.repeat(1, 1, 100)
         # x = torch.cat((style_emb, class_emb), dim=1)
         
-        print("In reconstructor, style_emb.size():", style_emb.size())
-        print("In reconstructor, class_emb.size():", class_emb.size())
+        # print("In reconstructor, style_emb.size():", style_emb.size())
+        # print("In reconstructor, class_emb.size():", class_emb.size())
         x = md_starGAN.concat_dim1(style_emb,class_emb)
-        print("After concat_dim1, x.size():", x.size())
+        # print("After concat_dim1, x.size():", x.size())
         x = self.le6(x)
-        print("After le6, x.size():", x.size())
+        # print("After le6, x.size():", x.size())
         x = md_starGAN.concat_dim1(x,class_emb) 
-        print("After concat_dim1, x.size():", x.size())
+        # print("After concat_dim1, x.size():", x.size())
         x = self.le7(x)
-        print("After le7, x.size():", x.size()) 
+        # print("After le7, x.size():", x.size()) 
         x = md_starGAN.concat_dim1(x,class_emb)
-        print("After concat_dim1, x.size():", x.size())
+        # print("After concat_dim1, x.size():", x.size())
         x = self.le8(x)
-        print("After le8, x.size():", x.size())
+        # print("After le8, x.size():", x.size())
         x = md_starGAN.concat_dim1(x,class_emb)
         x = self.le9(x)
-        print("After le9, x.size():", x.size())
+        # print("After le9, x.size():", x.size())
         x = md_starGAN.concat_dim1(x,class_emb)
         x = self.le10(x)
-        print("After le10, x.size():", x.size())
+        # print("After le10, x.size():", x.size())
         return x
 
 class DiscriminatorVC(nn.Module):
@@ -398,15 +398,15 @@ class DiscriminatorVC(nn.Module):
 
     def forward(self, x):
         # 1. Convolution
-        print("Before conv_blocks, x.size():", x.size())
+        # print("Before conv_blocks, x.size():", x.size())
         x = self._conv_blocks(x)
-        print("After conv_blocks, x.size():", x.size())
+        # print("After conv_blocks, x.size():", x.size())
         # 2. FC
         # x = x.view(x.size(0), x.size(1) * x.size(2) * x.size(3))
         x = x.view(x.size(0), x.size(1) * x.size(2))
-        print("After view, x.size():", x.size())
+        # print("After view, x.size():", x.size())
         x = self._fc(x)
-        print("After fc, x.size():", x.size())
+        # print("After fc, x.size():", x.size())
         # Return
         return x
 
