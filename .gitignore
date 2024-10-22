@@ -3,4 +3,5 @@ data/
 output/
 TIMIT.zip
 STORAGE/
-methods/disenib_conv_VC/__pycache__
+methods/disenib_conv_VC/__pycache__/
+shared_libs/modellib/__pycache__/
