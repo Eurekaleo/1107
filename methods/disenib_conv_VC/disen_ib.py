@@ -10,6 +10,7 @@ from shared_libs.custom_packages.custom_basic.operations import fet_d, ValidCont
 from shared_libs.custom_packages.custom_basic.metrics import FreqCounter, TriggerPeriod, TriggerLambda
 from shared_libs.custom_packages.custom_pytorch.operations import summarize_losses_and_backward, set_requires_grad
 import numpy as np
+from tqdm import tqdm
 
 # class DisenIB(IterativeBaseModel):
 #     """
@@ -32,6 +33,10 @@ class DisenIB(IterativeBaseModel):
     """
     Disentangled IB model modified for TIMIT audio data.
     """
+    def __init__(self, cfg):
+        super(DisenIB, self).__init__(cfg)  # 调用父类的初始化方法
+        self.global_iter = 0  # 初始化全局迭代计数器
+        
     def _build_architectures(self, **modules):
         super(DisenIB, self)._build_architectures(
             # Encoder, decoder, reconstructor, estimator
@@ -82,11 +87,21 @@ class DisenIB(IterativeBaseModel):
         return audio.size(0), (audio, label)
 
     def _train_step(self, packs):
+        # 获取 epoch 总数和当前 epoch
+        current_epoch = self._meters['i']['epoch']
+        steps = self._cfg.args.steps  # 假设你有 total_epochs 配置
+        disc_acc = 0  # 初始化为 0 或其他默认值
+
+        # tqdm 进度条设置
+        tqdm_bar = tqdm(total=self._cfg.args.n_times_main, desc=f"Epoch {current_epoch + 1}/{steps}", unit="iter")
+
         ################################################################################################################
         # Main
         ################################################################################################################
-        for _ in range(self._cfg.args.n_times_main):
+        for i in range(self._cfg.args.n_times_main):
+            tqdm_bar.update(1)  # 更新进度条
             audios, label = self._fetch_batch_data() 
+            
             # Clear grad
             set_requires_grad([self._Enc_style, self._Enc_class, self._Dec, self._Rec], requires_grad=True)
             set_requires_grad([self._Disc, self._Est], requires_grad=False)
@@ -159,12 +174,20 @@ class DisenIB(IterativeBaseModel):
             # Update
             self._optimizers['main'].step()
             """ Saving """
+            # 将关键信息更新到日志 packs 中
             packs['log'].update({
-                # Decoding & reconstruction
-                'loss_dec': loss_dec.item(), 'loss_rec': loss_rec.item(),
-                # Estimator
-                'loss_est_NO_DISPLAY': crit_est['loss_est'].item(), 'est': crit_est['est'].item()
+                'epoch': current_epoch,
+                'iter': self.global_iter,  # 使用全局迭代计数器
+                'batch': self._meters['i']['step'],  # 假设 step 记录了当前 batch 信息
+                'loss_dec': loss_dec.item(),
+                'loss_rec': loss_rec.item(),
+                'est': crit_est['est'].item(),
+                'disc_acc': disc_acc
             })
+
+            # 增加全局迭代计数器
+            self.global_iter += 1
+        tqdm_bar.close()  # 结束 tqdm 进度条
         ################################################################################################################
         # Density Estimator
         ################################################################################################################
@@ -242,8 +265,33 @@ class DisenIB(IterativeBaseModel):
                 'train/losses': fet_d(packs['log'], prefix='loss_', remove=('loss_', '_NO_DISPLAY')),
                 'train/est': fet_d(packs['log'], prefix='est_')
             }
-            packs['log'] = packs['log'].dict
+            # 确保 packs['log'] 是字典
+            if isinstance(packs['log'], ValidContainer):
+                packs['log'] = packs['log'].dict
+            # 确保 r_tfboard 是字典
+            if isinstance(r_tfboard, ValidContainer):
+                r_tfboard = r_tfboard.dict
+
+            # 更新 packs['tfboard']，使其为字典
             packs['tfboard'] = r_tfboard
 
+        # 调用父类的 _process_log_after_step 方法，确保传递的 packs 是正确的格式
         super(DisenIB, self)._process_log_after_step(
             packs, lmd_generate_log=_lmd_generate_log, lmd_process_log=Logger.reform_no_display_items)
+
+        # 格式化日志信息进行打印
+        log_info = (
+            f"Epoch [{packs['log'].get('epoch', 'N/A')}], "
+            f"Iter [{packs['log'].get('iter', 'N/A')}], "
+            f"Batch [{packs['log'].get('batch', 'N/A')}], "
+            f"Loss Dec: {packs['log'].get('loss_dec', 'N/A'):.4f}, "
+            f"Loss Rec: {packs['log'].get('loss_rec', 'N/A'):.4f}, "
+            f"Estimator: {packs['log'].get('est', 'N/A'):.4f}, "
+            f"Disc Acc: {packs['log'].get('disc_acc', 'N/A'):.2f}"
+        )
+        print(log_info)  # 你可以选择替换为 logger.info(log_info) 或 tqdm.write(log_info)
+
+        # 将日志保存到文件中
+        with open("training_log2.txt", "a") as log_file:
+            log_file.write(log_info + "\n")
+    
