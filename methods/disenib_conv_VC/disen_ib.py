@@ -111,12 +111,16 @@ class DisenIB(IterativeBaseModel):
 
             # 2. Reconstruction: use style embedding(from encoder) and ground truth label(speaker ID), to reconstruct an audio.
             # Optimized towards the target audio.
-            rec_output = self._Rec(resampling(style_emb, self._cfg.args.style_std), label)
+            rec_output = self._Rec(resampling(style_emb.transpose(1, 2), self._cfg.args.style_std), label)
+            rec_output = rec_output.transpose(1, 2) # (batch_size, time_steps, num_features)
+            print("rec_output.size():", rec_output.size())
+            print("audios.size():", audios.size())
+
             loss_rec = self._criterions['rec'](rec_output, audios)
-            print("Successfully get here!")
-            exit()
+            print("Successful Reconstruction!")
             # Backward
             summarize_losses_and_backward(loss_dec, loss_rec, retain_graph=True)
+            print("Successful Backward!")
             # ----------------------------------------------------------------------------------------------------------
             # Estimator
             # ----------------------------------------------------------------------------------------------------------
@@ -124,9 +128,11 @@ class DisenIB(IterativeBaseModel):
             est_output = self._Est(
                 resampling(style_emb, self._cfg.args.est_style_std),
                 resampling(class_emb, self._cfg.args.est_class_std), mode='orig')
+            print("Successful Estimator!")
             crit_est = self._criterions['est'](
                 output=est_output, emb=(style_emb, class_emb), mode='main',
                 lmd={'loss_est': self._cfg.args.lambda_est, 'loss_wall': self._cfg.args.lambda_wall})
+            print("Successful Crit Estimator!")
             # Backward
             # 1> Density estimation
             if self._meters['trigger_est'].check(self._meters['i']['step']):

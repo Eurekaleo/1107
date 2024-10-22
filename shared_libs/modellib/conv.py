@@ -328,10 +328,10 @@ class ReconstructorVC(nn.Module):
 
         # Deconvolution
         self.le6 = md_starGAN.DeconvGLU1D(style_dim+class_dim, mid_ch, 5, 1, normtype)
-        self.le7 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, mid_ch, 5, 1, normtype)
-        self.le8 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, mid_ch, 8, 2, normtype)
-        self.le9 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, mid_ch, 8, 2, normtype)
-        self.le10 = nn.Conv1d(mid_ch+class_dim, in_ch, 9, stride=1, padding=(9-1)//2)
+        self.le7 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, 2*mid_ch, 5, 1, normtype)
+        self.le8 = md_starGAN.DeconvGLU1D(2*mid_ch+class_dim, 4*mid_ch, 5, 1, normtype)
+        self.le9 = md_starGAN.DeconvGLU1D(4*mid_ch+class_dim, 8*mid_ch, 5, 1, normtype)
+        self.le10 = nn.Conv1d(8*mid_ch+class_dim, 3200, 9, stride=1, padding=(9-1)//2)
 
     def forward(self, style_emb, class_label):
         # Get class dim
@@ -342,19 +342,26 @@ class ReconstructorVC(nn.Module):
         # class_emb = class_emb.repeat(1, 1, 100)
         # x = torch.cat((style_emb, class_emb), dim=1)
         
-        # print(x.size())
+        print("In reconstructor, style_emb.size():", style_emb.size())
+        print("In reconstructor, class_emb.size():", class_emb.size())
         x = md_starGAN.concat_dim1(style_emb,class_emb)
+        print("After concat_dim1, x.size():", x.size())
         x = self.le6(x)
-        x = md_starGAN.concat_dim1(x,class_emb)
+        print("After le6, x.size():", x.size())
+        x = md_starGAN.concat_dim1(x,class_emb) 
+        print("After concat_dim1, x.size():", x.size())
         x = self.le7(x)
+        print("After le7, x.size():", x.size()) 
         x = md_starGAN.concat_dim1(x,class_emb)
+        print("After concat_dim1, x.size():", x.size())
         x = self.le8(x)
+        print("After le8, x.size():", x.size())
         x = md_starGAN.concat_dim1(x,class_emb)
         x = self.le9(x)
+        print("After le9, x.size():", x.size())
         x = md_starGAN.concat_dim1(x,class_emb)
         x = self.le10(x)
-
-        print(x.size())
+        print("After le10, x.size():", x.size())
         return x
 
 # ----------------------------------------------------------------------------------------------------------------------

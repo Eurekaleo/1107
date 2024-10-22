@@ -54,7 +54,7 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
         self.parser.add_argument("--num_mels",                      type=int,   default=80)
         self.parser.add_argument("--style_dim",                     type=int,   default=16)
         self.parser.add_argument("--class_dim",                     type=int,   default=16)
-        self.parser.add_argument("--mid_ch",                        type=int,   default=64)
+        self.parser.add_argument("--mid_ch",                        type=int,   default=256)
         self.parser.add_argument("--style_std",                     type=float, default=0.1)
         self.parser.add_argument("--class_std",                     type=float, default=1.0)
         self.parser.add_argument("--emb_radius",                    type=float, default=3.0)
