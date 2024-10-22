@@ -42,12 +42,12 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
         self.parser.add_argument("--dataset_shuffle",               type=int,   default=1,  choices=[0, 1])
         self.parser.add_argument("--dataset_num_threads",           type=int,   default=0)
         self.parser.add_argument("--dataset_drop_last",             type=bool,  default=True)
+        self.parser.add_argument("--cw_len",                        type=int,   default=20)
+        self.parser.add_argument("--cw_shift",                      type=int,   default=10)
         ##########################################################################################################
         # ######
         # Others
         ################################################################################################################
-        self.parser.add_argument("--cw_len",                        type=int,   default=200)
-        self.parser.add_argument("--cw_shift",                      type=int,   default=10)
         self.parser.add_argument("--fs",                            type=int,   default=16000)
         self.parser.add_argument("--n_fft",                         type=int,   default=2048)
         self.parser.add_argument("--hop_length",                    type=int,   default=512)

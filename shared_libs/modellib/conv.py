@@ -224,7 +224,8 @@ class EncoderTIMIT(nn.Module):
         # cnn_len_filt = [32, 8, 6] # cnn_len_filt = [251, 5, 5]
         cnn_len_filt = [251, 5, 5]
         # cnn_max_pool_len = [2, 2, 2] # cnn_max_pool_len = [3, 3, 3]
-        cnn_max_pool_len = [3, 3, 3]
+        # cnn_max_pool_len = [3, 3, 3]
+        cnn_max_pool_len = [2, 2, 2]
         cnn_use_laynorm_inp = True
         cnn_use_batchnorm_inp = False
         cnn_use_laynorm = [True, True, True]
@@ -233,7 +234,7 @@ class EncoderTIMIT(nn.Module):
         cnn_drop = [0.0, 0.0, 0.0]
         
         self.cnn_arch = {
-            'input_dim': 3200, # mel: 80
+            'input_dim': 320, # mel: 80
             'fs': fs,
             'cnn_N_filt': cnn_N_filt,
             'cnn_len_filt': cnn_len_filt,
@@ -333,7 +334,7 @@ class ReconstructorVC(nn.Module):
         self.le7 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, 2*mid_ch, 5, 1, normtype)
         self.le8 = md_starGAN.DeconvGLU1D(2*mid_ch+class_dim, 4*mid_ch, 5, 1, normtype)
         self.le9 = md_starGAN.DeconvGLU1D(4*mid_ch+class_dim, 8*mid_ch, 5, 1, normtype)
-        self.le10 = nn.Conv1d(8*mid_ch+class_dim, 3200, 9, stride=1, padding=(9-1)//2)
+        self.le10 = nn.Conv1d(8*mid_ch+class_dim, 320, 9, stride=1, padding=(9-1)//2)
 
     def forward(self, style_emb, class_label):
         # Get class dim
