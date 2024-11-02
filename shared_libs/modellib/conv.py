@@ -54,9 +54,14 @@ class Decoder(nn.Module):
         self.apply(init_weights)
 
     def forward(self, emb):
-        output = self._fc(emb)
+        x = torch.transpose(emb, 1, 2)
+        x = x.reshape(-1, x.size(2))
+        output = self._fc(x)
+        # print("output.size():", output.size())
+        output = output.view(emb.size(0), -1, output.size(1))
+        # print("output.size():", output.size())
         # average output on dim 1 (time axis)
-        output = output.mean(dim=1)
+        output = output.mean(dim=1).squeeze()
         return output
 
 
@@ -532,7 +537,7 @@ class EncoderTIMIT(nn.Module):
 # From ParallelWaveGAN
 class ReconstructorVC(nn.Module):
     """
-    Decoder Module.
+    Reconstructor Module.
     """
     def __init__(
         self,
@@ -669,7 +674,11 @@ class ReconstructorVC(nn.Module):
         """
         # perform upsampling
         if c is not None and self.upsample_net is not None:
+            print("c.size():", c.size())
             c = self.upsample_net(c)
+            print("c.size():", c.size())
+            print("z.size():", z.size())
+            c = torch.zeros(z.size(0), 16, z.size(2)).to(z.device)
             assert c.size(-1) == z.size(-1)
 
         # encode to hidden representation

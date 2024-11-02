@@ -46,10 +46,10 @@ class DisenIB(IterativeBaseModel):
             # Enc_class=EncoderTIMIT(self._cfg.args.class_dim),  # Updated for TIMIT, 16
             Enc_style=EncoderTIMIT(nOut = self._cfg.args.style_dim),  # Updated for RawNet3
             Enc_class=EncoderTIMIT(nOut =self._cfg.args.class_dim),  # Updated for RawNet3
-            # num_mels set to 80
+            # Enc_style.size : (batch_size, style_dim, T')
             Dec=Decoder(self._cfg.args.class_dim, self._cfg.args.num_classes),
             # Rec=ReconstructorVC(self._cfg.args.num_mels, self._cfg.args.num_classes, self._cfg.args.style_dim, self._cfg.args.mid_ch, self._cfg.args.class_dim),
-            Rec=ReconstructorVC(),
+            Rec=ReconstructorVC(aux_channels=16),
             Est=DensityEstimator(self._cfg.args.style_dim, self._cfg.args.class_dim),
             # Discriminator (update as needed for TIMIT)
             Disc=DiscriminatorVC()
@@ -114,7 +114,7 @@ class DisenIB(IterativeBaseModel):
             # ----------------------------------------------------------------------------------------------------------
             # style_emb = torch.randn(self._cfg.args.batch_size, self._cfg.args.style_dim, 100).to(self._cfg.args.device) # 64, 16. 100
             # class_emb = torch.randn(self._cfg.args.batch_size, self._cfg.args.class_dim).to(self._cfg.args.device) # 64, 16 
-            # label = torch.from_numpy(np.array([0] * self._cfg.args.batch_size)).to(self._cfg.args.device, dtype=torch.int64) # 64
+            label = torch.from_numpy(np.array([0] * self._cfg.args.batch_size)).to(self._cfg.args.device, dtype=torch.int64) # 64
             # audios = torch.randn(self._cfg.args.batch_size, self._cfg.args.num_mels, 400).to(self._cfg.args.device) # 64, 80, 400
 
             audios = torch.randn(self._cfg.args.batch_size, 16500).to(self._cfg.args.device)
@@ -127,19 +127,19 @@ class DisenIB(IterativeBaseModel):
             # Optimized towards the ground truth label(speaker ID).
   
             dec_output = self._Dec(resampling(class_emb, self._cfg.args.class_std))
-            # print(dec_output.size(), label.size())
+            print(dec_output.size(), label.size())
             loss_dec = self._criterions['dec'](dec_output, label)            
 
             # 2. Reconstruction: use style embedding(from encoder) and ground truth label(speaker ID), to reconstruct an audio.
             # Optimized towards the target audio.
-            rec_output = self._Rec(audios.unsqueeze(1), resampling(style_emb.transpose(1, 2), self._cfg.args.style_std))
+            rec_output = self._Rec(audios.unsqueeze(1), resampling(style_emb, self._cfg.args.style_std))
             print("rec_output.size():", rec_output.size())  # (batch_size, 1, time_steps)
             print("Reconstructor is working!")
             rec_output = rec_output.transpose(1, 2) # (batch_size, time_steps, 1)
             # print("rec_output.size():", rec_output.size())
             # print("audios.size():", audios.size())
 
-            loss_rec = self._criterions['rec'](rec_output, audios)
+            loss_rec = self._criterions['rec'](rec_output, audios.unsqueeze(1))
             # print("Successful Reconstruction!")
             # Backward
             summarize_losses_and_backward(loss_dec, loss_rec, retain_graph=True)
