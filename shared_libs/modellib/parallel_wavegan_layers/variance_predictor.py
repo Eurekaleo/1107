@@ -9,7 +9,7 @@
 import torch
 from typeguard import check_argument_types
 
-from parallel_wavegan.layers.layer_norm import LayerNorm
+from parallel_wavegan_layers.layer_norm import LayerNorm
 
 
 class VariancePredictor(torch.nn.Module):

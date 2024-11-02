@@ -14,9 +14,9 @@ import math
 import numpy as np
 import torch
 
-from .parallel_wavegan_layers import Conv1d, Conv1d1x1
-from .parallel_wavegan_layers import WaveNetResidualBlock as ResidualBlock
-from .parallel_wavegan_layers import upsample
+from parallel_wavegan_layers import Conv1d, Conv1d1x1
+from parallel_wavegan_layers import WaveNetResidualBlock as ResidualBlock
+from parallel_wavegan_layers import upsample
 # from parallel_wavegan.utils import read_hdf5
 
 def init_weights(layer):
@@ -715,23 +715,23 @@ class ReconstructorVC(nn.Module):
             self.layers, self.stacks, self.kernel_size
         )
 
-    def register_stats(self, stats):
-        """Register stats for de-normalization as buffer.
+    # def register_stats(self, stats):
+    #     """Register stats for de-normalization as buffer.
 
-        Args:
-            stats (str): Path of statistics file (".npy" or ".h5").
+    #     Args:
+    #         stats (str): Path of statistics file (".npy" or ".h5").
 
-        """
-        assert stats.endswith(".h5") or stats.endswith(".npy")
-        if stats.endswith(".h5"):
-            mean = read_hdf5(stats, "mean").reshape(-1)
-            scale = read_hdf5(stats, "scale").reshape(-1)
-        else:
-            mean = np.load(stats)[0].reshape(-1)
-            scale = np.load(stats)[1].reshape(-1)
-        self.register_buffer("mean", torch.from_numpy(mean).float())
-        self.register_buffer("scale", torch.from_numpy(scale).float())
-        logging.info("Successfully registered stats as buffer.")
+    #     """
+    #     assert stats.endswith(".h5") or stats.endswith(".npy")
+    #     if stats.endswith(".h5"):
+    #         mean = read_hdf5(stats, "mean").reshape(-1)
+    #         scale = read_hdf5(stats, "scale").reshape(-1)
+    #     else:
+    #         mean = np.load(stats)[0].reshape(-1)
+    #         scale = np.load(stats)[1].reshape(-1)
+    #     self.register_buffer("mean", torch.from_numpy(mean).float())
+    #     self.register_buffer("scale", torch.from_numpy(scale).float())
+    #     logging.info("Successfully registered stats as buffer.")
 
     def inference(self, c=None, x=None, normalize_before=False):
         """Perform inference.

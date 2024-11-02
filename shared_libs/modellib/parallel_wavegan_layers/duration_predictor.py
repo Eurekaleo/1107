@@ -11,7 +11,7 @@
 
 import torch
 
-from parallel_wavegan.layers.layer_norm import LayerNorm
+from parallel_wavegan_layers.layer_norm import LayerNorm
 
 
 class DurationPredictor(torch.nn.Module):
