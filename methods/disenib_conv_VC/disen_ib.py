@@ -132,8 +132,10 @@ class DisenIB(IterativeBaseModel):
 
             # 2. Reconstruction: use style embedding(from encoder) and ground truth label(speaker ID), to reconstruct an audio.
             # Optimized towards the target audio.
-            rec_output = self._Rec(resampling(style_emb.transpose(1, 2), self._cfg.args.style_std), label)
-            rec_output = rec_output.transpose(1, 2) # (batch_size, time_steps, num_features)
+            rec_output = self._Rec(audios.unsqueeze(1), resampling(style_emb.transpose(1, 2), self._cfg.args.style_std))
+            print("rec_output.size():", rec_output.size())  # (batch_size, 1, time_steps)
+            print("Reconstructor is working!")
+            rec_output = rec_output.transpose(1, 2) # (batch_size, time_steps, 1)
             # print("rec_output.size():", rec_output.size())
             # print("audios.size():", audios.size())
 
