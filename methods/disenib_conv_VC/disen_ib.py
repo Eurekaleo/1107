@@ -42,8 +42,10 @@ class DisenIB(IterativeBaseModel):
             # Encoder, decoder, reconstructor, estimator
             # Encoder: Enc_style for extracting style info (can use d-vector) & Enc_class for extracting class info (e.g. label for TIMIT)
             
-            Enc_style=EncoderTIMIT(self._cfg.args.style_dim),  # Updated for TIMIT, 16
-            Enc_class=EncoderTIMIT(self._cfg.args.class_dim),  # Updated for TIMIT, 16
+            # Enc_style=EncoderTIMIT(self._cfg.args.style_dim),  # Updated for TIMIT, 16
+            # Enc_class=EncoderTIMIT(self._cfg.args.class_dim),  # Updated for TIMIT, 16
+            Enc_style=EncoderTIMIT(nOut = self._cfg.args.style_dim),  # Updated for RawNet3
+            Enc_class=EncoderTIMIT(nOut =self._cfg.args.class_dim),  # Updated for RawNet3
             # num_mels set to 80
             Dec=Decoder(self._cfg.args.class_dim, self._cfg.args.num_classes),
             Rec=ReconstructorVC(self._cfg.args.num_mels, self._cfg.args.num_classes, self._cfg.args.style_dim, self._cfg.args.mid_ch, self._cfg.args.class_dim),
@@ -100,7 +102,7 @@ class DisenIB(IterativeBaseModel):
         ################################################################################################################
         for i in range(self._cfg.args.n_times_main):
             tqdm_bar.update(1)  # 更新进度条
-            audios, label = self._fetch_batch_data() 
+            # audios, label = self._fetch_batch_data() 
             
             # Clear grad
             set_requires_grad([self._Enc_style, self._Enc_class, self._Dec, self._Rec], requires_grad=True)
@@ -114,8 +116,11 @@ class DisenIB(IterativeBaseModel):
             # label = torch.from_numpy(np.array([0] * self._cfg.args.batch_size)).to(self._cfg.args.device, dtype=torch.int64) # 64
             # audios = torch.randn(self._cfg.args.batch_size, self._cfg.args.num_mels, 400).to(self._cfg.args.device) # 64, 80, 400
 
+            audios = torch.randn(self._cfg.args.batch_size, 16500).to(self._cfg.args.device)
             style_emb, class_emb = self._Enc_style(audios), self._Enc_class(audios)
-            # print("style_emb:", class_emb)
+            print("style_emb:", class_emb)
+            print ("emb.size():", class_emb.size())
+            print("Encoders are working!")
             
             # 1. Decoding: use class embedding(from encoder), to generate the label (speaker ID).
             # Optimized towards the ground truth label(speaker ID).
