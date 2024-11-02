@@ -122,7 +122,6 @@ class DisenIB(IterativeBaseModel):
             print("style_emb:", class_emb)
             print ("emb.size():", class_emb.size())
             print("Encoders are working!")
-            exit()
             # 1. Decoding: use class embedding(from encoder), to generate the label (speaker ID).
             # Optimized towards the ground truth label(speaker ID).
   
