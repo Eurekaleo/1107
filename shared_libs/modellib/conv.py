@@ -368,22 +368,26 @@ class EncoderTIMIT(nn.Module):
             C, C, kernel_size=3, dilation=3, scale=model_scale, pool=3
         )
         self.layer3 = block(C, C, kernel_size=3, dilation=4, scale=model_scale)
-        self.layer4 = nn.Conv1d(3 * C, 1536, kernel_size=1)
-
+        # self.layer4 = nn.Conv1d(3 * C, 1536, kernel_size=1)
+        self.layer4 = nn.Conv1d(3 * C, nOut, kernel_size=1)
+#
         if self.context:
             attn_input = 1536 * 3
+            # attn_input = 3 * nOut
         else:
             attn_input = 1536
+            # attn_input = nOut
         print("self.encoder_type", self.encoder_type)
         if self.encoder_type == "ECA":
-            attn_output = 1536
+            # attn_output = 1536
+            attn_output = nOut
         elif self.encoder_type == "ASP":
             attn_output = 1
         else:
             raise ValueError("Undefined encoder")
 
         #############################################
-        attention_output = nOut
+        
 
         self.attention = nn.Sequential(
             nn.Conv1d(attn_input, 128, kernel_size=1),
@@ -428,7 +432,7 @@ class EncoderTIMIT(nn.Module):
             x3 = self.layer3(x2)
 
         x = self.layer4(torch.cat((self.mp3(x1), x2, x3), dim=1))
-        x = self.relu(x)
+        # x = self.relu(x)
 
         # t = x.size()[-1]
 
