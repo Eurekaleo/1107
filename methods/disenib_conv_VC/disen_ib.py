@@ -48,7 +48,8 @@ class DisenIB(IterativeBaseModel):
             Enc_class=EncoderTIMIT(nOut =self._cfg.args.class_dim),  # Updated for RawNet3
             # num_mels set to 80
             Dec=Decoder(self._cfg.args.class_dim, self._cfg.args.num_classes),
-            Rec=ReconstructorVC(self._cfg.args.num_mels, self._cfg.args.num_classes, self._cfg.args.style_dim, self._cfg.args.mid_ch, self._cfg.args.class_dim),
+            # Rec=ReconstructorVC(self._cfg.args.num_mels, self._cfg.args.num_classes, self._cfg.args.style_dim, self._cfg.args.mid_ch, self._cfg.args.class_dim),
+            Rec=ReconstructorVC(),
             Est=DensityEstimator(self._cfg.args.style_dim, self._cfg.args.class_dim),
             # Discriminator (update as needed for TIMIT)
             Disc=DiscriminatorVC()
