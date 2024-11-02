@@ -8,6 +8,16 @@ from .dnn_models import MLP
 from .RawNetBasicBlock import Bottle2neck, PreEmphasis
 from asteroid_filterbanks import Encoder, ParamSincFB
 # import module_starGAN as md_starGAN
+import logging
+import math
+
+import numpy as np
+import torch
+
+from .parallel_wavegan_layers import Conv1d, Conv1d1x1
+from .parallel_wavegan_layers import WaveNetResidualBlock as ResidualBlock
+from .parallel_wavegan_layers import upsample
+# from parallel_wavegan.utils import read_hdf5
 
 def init_weights(layer):
     """
@@ -457,61 +467,309 @@ class EncoderTIMIT(nn.Module):
 
         return x
 
+
+# # From StarGAN
+# class ReconstructorVC(nn.Module):
+#     """
+#     Decoder Module.
+#     """
+#     def __init__(self, in_ch, n_spk, style_dim, mid_ch, class_dim, normtype='IN', src_conditioning=False):
+#         # in_ch,    n_spk, z_ch, mid_ch, s_ch
+#         # num_mels, n_spk, zdim, hdim,   sdim(class_dim)
+#         # num_mels, # of speakers, dimension of bottleneck layer in generator, dimension of middle layers in generator, dimension of speaker embedding
+#         super(ReconstructorVC, self).__init__()
+#         self.register_parameter('word_dict', torch.nn.Parameter(torch.randn(size=(n_spk, class_dim))))
+
+#         # Convolution, which is done in encoder
+#         # self.le1 = md_starGAN.ConvGLU1D(in_ch+add_ch, mid_ch, 9, 1, normtype)
+#         # self.le2 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 8, 2, normtype)
+#         # self.le3 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 8, 2, normtype)
+#         # self.le4 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 5, 1, normtype)
+#         # self.le5 = md_starGAN.ConvGLU1D(mid_ch+add_ch, z_ch, 5, 1, normtype)
+
+#         # Deconvolution
+#         self.le6 = md_starGAN.DeconvGLU1D(style_dim+class_dim, mid_ch, 5, 1, normtype)
+#         self.le7 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, 2*mid_ch, 5, 1, normtype)
+#         self.le8 = md_starGAN.DeconvGLU1D(2*mid_ch+class_dim, 4*mid_ch, 5, 1, normtype)
+#         self.le9 = md_starGAN.DeconvGLU1D(4*mid_ch+class_dim, 8*mid_ch, 5, 1, normtype)
+#         self.le10 = nn.Conv1d(8*mid_ch+class_dim, 320, 9, stride=1, padding=(9-1)//2)
+
+#     def forward(self, style_emb, class_label):
+#         # Get class dim
+#         class_emb = torch.index_select(self.word_dict, dim=0, index=class_label)
+#         # 2. Convolution
+#         # class_emb = class_emb.unsqueeze(-1)
+#         # print(class_emb.size())
+#         # class_emb = class_emb.repeat(1, 1, 100)
+#         # x = torch.cat((style_emb, class_emb), dim=1)
+        
+#         # print("In reconstructor, style_emb.size():", style_emb.size())
+#         # print("In reconstructor, class_emb.size():", class_emb.size())
+#         x = md_starGAN.concat_dim1(style_emb,class_emb)
+#         # print("After concat_dim1, x.size():", x.size())
+#         x = self.le6(x)
+#         # print("After le6, x.size():", x.size())
+#         x = md_starGAN.concat_dim1(x,class_emb) 
+#         # print("After concat_dim1, x.size():", x.size())
+#         x = self.le7(x)
+#         # print("After le7, x.size():", x.size()) 
+#         x = md_starGAN.concat_dim1(x,class_emb)
+#         # print("After concat_dim1, x.size():", x.size())
+#         x = self.le8(x)
+#         # print("After le8, x.size():", x.size())
+#         x = md_starGAN.concat_dim1(x,class_emb)
+#         x = self.le9(x)
+#         # print("After le9, x.size():", x.size())
+#         x = md_starGAN.concat_dim1(x,class_emb)
+#         x = self.le10(x)
+#         # print("After le10, x.size():", x.size())
+#         return x
+
+# From ParallelWaveGAN
 class ReconstructorVC(nn.Module):
     """
     Decoder Module.
     """
-    def __init__(self, in_ch, n_spk, style_dim, mid_ch, class_dim, normtype='IN', src_conditioning=False):
-        # in_ch,    n_spk, z_ch, mid_ch, s_ch
-        # num_mels, n_spk, zdim, hdim,   sdim(class_dim)
-        # num_mels, # of speakers, dimension of bottleneck layer in generator, dimension of middle layers in generator, dimension of speaker embedding
+    def __init__(
+        self,
+        in_channels=1,
+        out_channels=1,
+        kernel_size=3,
+        layers=30,
+        stacks=3,
+        residual_channels=64,
+        gate_channels=128,
+        skip_channels=64,
+        aux_channels=80,
+        aux_context_window=2,
+        dropout=0.0,
+        bias=True,
+        use_weight_norm=True,
+        use_causal_conv=False,
+        upsample_conditional_features=True,
+        upsample_net="ConvInUpsampleNetwork",
+        upsample_params={"upsample_scales": [4, 4, 4, 4]},
+    ):
+        """Initialize Parallel WaveGAN Generator module.
+
+        Args:
+            in_channels (int): Number of input channels.
+            out_channels (int): Number of output channels.
+            kernel_size (int): Kernel size of dilated convolution.
+            layers (int): Number of residual block layers.
+            stacks (int): Number of stacks i.e., dilation cycles.
+            residual_channels (int): Number of channels in residual conv.
+            gate_channels (int):  Number of channels in gated conv.
+            skip_channels (int): Number of channels in skip conv.
+            aux_channels (int): Number of channels for auxiliary feature conv.
+            aux_context_window (int): Context window size for auxiliary feature.
+            dropout (float): Dropout rate. 0.0 means no dropout applied.
+            bias (bool): Whether to use bias parameter in conv layer.
+            use_weight_norm (bool): Whether to use weight norm.
+                If set to true, it will be applied to all of the conv layers.
+            use_causal_conv (bool): Whether to use causal structure.
+            upsample_conditional_features (bool): Whether to use upsampling network.
+            upsample_net (str): Upsampling network architecture.
+            upsample_params (dict): Upsampling network parameters.
+
+        """
         super(ReconstructorVC, self).__init__()
-        self.register_parameter('word_dict', torch.nn.Parameter(torch.randn(size=(n_spk, class_dim))))
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.aux_channels = aux_channels
+        self.aux_context_window = aux_context_window
+        self.layers = layers
+        self.stacks = stacks
+        self.kernel_size = kernel_size
 
-        # Convolution, which is done in encoder
-        # self.le1 = md_starGAN.ConvGLU1D(in_ch+add_ch, mid_ch, 9, 1, normtype)
-        # self.le2 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 8, 2, normtype)
-        # self.le3 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 8, 2, normtype)
-        # self.le4 = md_starGAN.ConvGLU1D(mid_ch+add_ch, mid_ch, 5, 1, normtype)
-        # self.le5 = md_starGAN.ConvGLU1D(mid_ch+add_ch, z_ch, 5, 1, normtype)
+        # check the number of layers and stacks
+        assert layers % stacks == 0
+        layers_per_stack = layers // stacks
 
-        # Deconvolution
-        self.le6 = md_starGAN.DeconvGLU1D(style_dim+class_dim, mid_ch, 5, 1, normtype)
-        self.le7 = md_starGAN.DeconvGLU1D(mid_ch+class_dim, 2*mid_ch, 5, 1, normtype)
-        self.le8 = md_starGAN.DeconvGLU1D(2*mid_ch+class_dim, 4*mid_ch, 5, 1, normtype)
-        self.le9 = md_starGAN.DeconvGLU1D(4*mid_ch+class_dim, 8*mid_ch, 5, 1, normtype)
-        self.le10 = nn.Conv1d(8*mid_ch+class_dim, 320, 9, stride=1, padding=(9-1)//2)
+        # define first convolution
+        self.first_conv = Conv1d1x1(in_channels, residual_channels, bias=True)
 
-    def forward(self, style_emb, class_label):
-        # Get class dim
-        class_emb = torch.index_select(self.word_dict, dim=0, index=class_label)
-        # 2. Convolution
-        # class_emb = class_emb.unsqueeze(-1)
-        # print(class_emb.size())
-        # class_emb = class_emb.repeat(1, 1, 100)
-        # x = torch.cat((style_emb, class_emb), dim=1)
-        
-        # print("In reconstructor, style_emb.size():", style_emb.size())
-        # print("In reconstructor, class_emb.size():", class_emb.size())
-        x = md_starGAN.concat_dim1(style_emb,class_emb)
-        # print("After concat_dim1, x.size():", x.size())
-        x = self.le6(x)
-        # print("After le6, x.size():", x.size())
-        x = md_starGAN.concat_dim1(x,class_emb) 
-        # print("After concat_dim1, x.size():", x.size())
-        x = self.le7(x)
-        # print("After le7, x.size():", x.size()) 
-        x = md_starGAN.concat_dim1(x,class_emb)
-        # print("After concat_dim1, x.size():", x.size())
-        x = self.le8(x)
-        # print("After le8, x.size():", x.size())
-        x = md_starGAN.concat_dim1(x,class_emb)
-        x = self.le9(x)
-        # print("After le9, x.size():", x.size())
-        x = md_starGAN.concat_dim1(x,class_emb)
-        x = self.le10(x)
-        # print("After le10, x.size():", x.size())
+        # define conv + upsampling network
+        if upsample_conditional_features:
+            upsample_params.update(
+                {
+                    "use_causal_conv": use_causal_conv,
+                }
+            )
+            if upsample_net == "MelGANGenerator":
+                print("Do not support MelGANGenerator!")
+                exit()
+                # assert aux_context_window == 0
+                # upsample_params.update(
+                #     {
+                #         "use_weight_norm": False,  # not to apply twice
+                #         "use_final_nonlinear_activation": False,
+                #     }
+                # )
+                # self.upsample_net = getattr(models, upsample_net)(**upsample_params)
+            else:
+                if upsample_net == "ConvInUpsampleNetwork":
+                    upsample_params.update(
+                        {
+                            "aux_channels": aux_channels,
+                            "aux_context_window": aux_context_window,
+                        }
+                    )
+                self.upsample_net = getattr(upsample, upsample_net)(**upsample_params)
+            self.upsample_factor = np.prod(upsample_params["upsample_scales"])
+        else:
+            self.upsample_net = None
+            self.upsample_factor = 1
+
+        # define residual blocks
+        self.conv_layers = torch.nn.ModuleList()
+        for layer in range(layers):
+            dilation = 2 ** (layer % layers_per_stack)
+            conv = ResidualBlock(
+                kernel_size=kernel_size,
+                residual_channels=residual_channels,
+                gate_channels=gate_channels,
+                skip_channels=skip_channels,
+                aux_channels=aux_channels,
+                dilation=dilation,
+                dropout=dropout,
+                bias=bias,
+                use_causal_conv=use_causal_conv,
+            )
+            self.conv_layers += [conv]
+
+        # define output layers
+        self.last_conv_layers = torch.nn.ModuleList(
+            [
+                torch.nn.ReLU(inplace=True),
+                Conv1d1x1(skip_channels, skip_channels, bias=True),
+                torch.nn.ReLU(inplace=True),
+                Conv1d1x1(skip_channels, out_channels, bias=True),
+            ]
+        )
+
+        # apply weight norm
+        if use_weight_norm:
+            self.apply_weight_norm()
+
+    def forward(self, z, c):
+        """Calculate forward propagation.
+
+        Args:
+            z (Tensor): Input noise signal (B, 1, T).
+            c (Tensor): Local conditioning auxiliary features (B, C ,T').
+
+        Returns:
+            Tensor: Output tensor (B, out_channels, T)
+
+        """
+        # perform upsampling
+        if c is not None and self.upsample_net is not None:
+            c = self.upsample_net(c)
+            assert c.size(-1) == z.size(-1)
+
+        # encode to hidden representation
+        x = self.first_conv(z)
+        skips = 0
+        for f in self.conv_layers:
+            x, h = f(x, c)
+            skips += h
+        skips *= math.sqrt(1.0 / len(self.conv_layers))
+
+        # apply final layers
+        x = skips
+        for f in self.last_conv_layers:
+            x = f(x)
+
         return x
+
+    def remove_weight_norm(self):
+        """Remove weight normalization module from all of the layers."""
+
+        def _remove_weight_norm(m):
+            try:
+                logging.debug(f"Weight norm is removed from {m}.")
+                torch.nn.utils.remove_weight_norm(m)
+            except ValueError:  # this module didn't have weight norm
+                return
+
+        self.apply(_remove_weight_norm)
+
+    def apply_weight_norm(self):
+        """Apply weight normalization module from all of the layers."""
+
+        def _apply_weight_norm(m):
+            if isinstance(m, torch.nn.Conv1d) or isinstance(m, torch.nn.Conv2d):
+                torch.nn.utils.weight_norm(m)
+                logging.debug(f"Weight norm is applied to {m}.")
+
+        self.apply(_apply_weight_norm)
+
+    @staticmethod
+    def _get_receptive_field_size(layers, stacks, kernel_size, dilation=lambda x: 2**x):
+        assert layers % stacks == 0
+        layers_per_cycle = layers // stacks
+        dilations = [dilation(i % layers_per_cycle) for i in range(layers)]
+        return (kernel_size - 1) * sum(dilations) + 1
+
+    @property
+    def receptive_field_size(self):
+        """Return receptive field size."""
+        return self._get_receptive_field_size(
+            self.layers, self.stacks, self.kernel_size
+        )
+
+    def register_stats(self, stats):
+        """Register stats for de-normalization as buffer.
+
+        Args:
+            stats (str): Path of statistics file (".npy" or ".h5").
+
+        """
+        assert stats.endswith(".h5") or stats.endswith(".npy")
+        if stats.endswith(".h5"):
+            mean = read_hdf5(stats, "mean").reshape(-1)
+            scale = read_hdf5(stats, "scale").reshape(-1)
+        else:
+            mean = np.load(stats)[0].reshape(-1)
+            scale = np.load(stats)[1].reshape(-1)
+        self.register_buffer("mean", torch.from_numpy(mean).float())
+        self.register_buffer("scale", torch.from_numpy(scale).float())
+        logging.info("Successfully registered stats as buffer.")
+
+    def inference(self, c=None, x=None, normalize_before=False):
+        """Perform inference.
+
+        Args:
+            c (Union[Tensor, ndarray]): Local conditioning auxiliary features (T' ,C).
+            x (Union[Tensor, ndarray]): Input noise signal (T, 1).
+            normalize_before (bool): Whether to perform normalization.
+
+        Returns:
+            Tensor: Output tensor (T, out_channels)
+
+        """
+        if x is not None:
+            if not isinstance(x, torch.Tensor):
+                x = torch.tensor(x, dtype=torch.float).to(
+                    next(self.parameters()).device
+                )
+            x = x.transpose(1, 0).unsqueeze(0)
+        else:
+            assert c is not None
+            x = torch.randn(1, 1, len(c) * self.upsample_factor).to(
+                next(self.parameters()).device
+            )
+        if c is not None:
+            if not isinstance(c, torch.Tensor):
+                c = torch.tensor(c, dtype=torch.float).to(
+                    next(self.parameters()).device
+                )
+            if normalize_before:
+                c = (c - self.mean) / self.scale
+            c = c.transpose(1, 0).unsqueeze(0)
+            c = torch.nn.ReplicationPad1d(self.aux_context_window)(c)
+        return self.forward(x, c).squeeze(0).transpose(1, 0)
 
 class DiscriminatorVC(nn.Module):
     """
