@@ -372,6 +372,9 @@ class EncoderTIMIT(nn.Module):
         else:
             raise ValueError("Undefined encoder")
 
+        #############################################
+        attention_output = nOut
+
         self.attention = nn.Sequential(
             nn.Conv1d(attn_input, 128, kernel_size=1),
             nn.ReLU(),
@@ -417,39 +420,40 @@ class EncoderTIMIT(nn.Module):
         x = self.layer4(torch.cat((self.mp3(x1), x2, x3), dim=1))
         x = self.relu(x)
 
-        t = x.size()[-1]
+        # t = x.size()[-1]
 
-        if self.context:
-            global_x = torch.cat(
-                (
-                    x,
-                    torch.mean(x, dim=2, keepdim=True).repeat(1, 1, t),
-                    torch.sqrt(
-                        torch.var(x, dim=2, keepdim=True).clamp(
-                            min=1e-4, max=1e4
-                        )
-                    ).repeat(1, 1, t),
-                ),
-                dim=1,
-            )
-        else:
-            global_x = x
+        # if self.context:
+        #     global_x = torch.cat(
+        #         (
+        #             x,
+        #             torch.mean(x, dim=2, keepdim=True).repeat(1, 1, t),
+        #             torch.sqrt(
+        #                 torch.var(x, dim=2, keepdim=True).clamp(
+        #                     min=1e-4, max=1e4
+        #                 )
+        #             ).repeat(1, 1, t),
+        #         ),
+        #         dim=1,
+        #     )
+        # else:
+        #     global_x = x
 
-        w = self.attention(global_x)
+        # w = self.attention(global_x)
 
-        mu = torch.sum(x * w, dim=2)
-        sg = torch.sqrt(
-            (torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-4, max=1e4)
-        )
+        # mu = torch.sum(x * w, dim=2)
+        # sg = torch.sqrt(
+        #     (torch.sum((x**2) * w, dim=2) - mu**2).clamp(min=1e-4, max=1e4)
+        # )
 
-        x = torch.cat((mu, sg), 1)
+        # x = torch.cat((mu, sg), 1)
 
-        x = self.bn5(x)
+        # x = self.bn5(x)
 
-        x = self.fc6(x)
+        # x = self.fc6(x)
+        # print ("x.size():", x.size())   
 
-        if self.out_bn:
-            x = self.bn6(x)
+        # if self.out_bn:
+        #     x = self.bn6(x)
 
         return x
 
