@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from . import module_starGAN as md_starGAN
 from .dnn_models import SincNet as CNN 
 from .dnn_models import MLP
-from .RawNetBasicBlock import Bottle2neck, PreEmphasis
+from .RawNetBasicBlock import Bottle2neck, PreEmphasis, AFMS
 from asteroid_filterbanks import Encoder, ParamSincFB
 # import module_starGAN as md_starGAN
 import logging
@@ -335,7 +335,7 @@ class EncoderTIMIT(nn.Module):
 
 
 ###########RAWNET################
-    def __init__(self, block=Bottle2neck, model_scale=8, context=True, summed=True, C=1024,encoder_type="ECA",
+    def __init__(self, block=Bottle2neck, model_scale=8, context=False, summed=True, C=1024,encoder_type="ECA",
         nOut=256,
         out_bn=False,
         sinc_stride=10,
@@ -361,7 +361,7 @@ class EncoderTIMIT(nn.Module):
                 C // 4,
                 251,
                 stride=sinc_stride,
-            )
+            ),as_conv1d=True
         )
         self.relu = nn.ReLU()
         self.bn1 = nn.BatchNorm1d(C // 4)
@@ -375,7 +375,7 @@ class EncoderTIMIT(nn.Module):
         self.layer3 = block(C, C, kernel_size=3, dilation=4, scale=model_scale)
         # self.layer4 = nn.Conv1d(3 * C, 1536, kernel_size=1)
         self.layer4 = nn.Conv1d(3 * C, nOut, kernel_size=1)
-#
+        ###########################################################
         if self.context:
             attn_input = 1536 * 3
             # attn_input = 3 * nOut
@@ -384,8 +384,8 @@ class EncoderTIMIT(nn.Module):
             # attn_input = nOut
         print("self.encoder_type", self.encoder_type)
         if self.encoder_type == "ECA":
-            # attn_output = 1536
-            attn_output = nOut
+            attn_output = 1536
+            # attn_output = nOut
         elif self.encoder_type == "ASP":
             attn_output = 1
         else:
@@ -416,7 +416,13 @@ class EncoderTIMIT(nn.Module):
 
         with torch.cuda.amp.autocast(enabled=False):
             x = self.preprocess(x)
+            # print("x.size():", x.size())
+            # bs,1,?
+            # 16000 -> T/S = 1575
+            # 16500 -> T/S = 1625
             x = torch.abs(self.conv1(x))
+            # print("x.size():", x.size())
+            # bs,C/4,t*15 = bs,C/4,T/S
             if self.log_sinc:
                 x = torch.log(x + 1e-6)
             if self.norm_sinc == "mean":
@@ -426,7 +432,8 @@ class EncoderTIMIT(nn.Module):
                 s = torch.std(x, dim=-1, keepdim=True)
                 s[s < 0.001] = 0.001
                 x = (x - m) / s
-
+        # print("x.size():", x.size())
+        # bs,C/4,t*15
         if self.summed:
             x1 = self.layer1(x)
             x2 = self.layer2(x1)
@@ -436,10 +443,18 @@ class EncoderTIMIT(nn.Module):
             x2 = self.layer2(x1)
             x3 = self.layer3(x2)
 
+        
+        print ("x1.size():",self.mp3(x1).size())
+        print ("x2.size():",x2.size())
+        print ("x3.size():",x3.size())
+        print("torch.cat((self.mp3(x1), x2, x3), dim=1)", torch.cat((self.mp3(x1), x2, x3), dim=1).size())
+
         x = self.layer4(torch.cat((self.mp3(x1), x2, x3), dim=1))
         # x = self.relu(x)
+        # # bs,3C,t
 
         # t = x.size()[-1]
+        # print("t",t) 
 
         # if self.context:
         #     global_x = torch.cat(
@@ -457,6 +472,7 @@ class EncoderTIMIT(nn.Module):
         # else:
         #     global_x = x
 
+        # print("global_x.size():", global_x.size())
         # w = self.attention(global_x)
 
         # mu = torch.sum(x * w, dim=2)
@@ -465,8 +481,10 @@ class EncoderTIMIT(nn.Module):
         # )
 
         # x = torch.cat((mu, sg), 1)
+        # print ("x.size():", x.size())   
 
         # x = self.bn5(x)
+        # print ("x.size():", x.size())   
 
         # x = self.fc6(x)
         # print ("x.size():", x.size())   

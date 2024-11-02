@@ -117,12 +117,12 @@ class DisenIB(IterativeBaseModel):
             label = torch.from_numpy(np.array([0] * self._cfg.args.batch_size)).to(self._cfg.args.device, dtype=torch.int64) # 64
             # audios = torch.randn(self._cfg.args.batch_size, self._cfg.args.num_mels, 400).to(self._cfg.args.device) # 64, 80, 400
 
-            audios = torch.randn(self._cfg.args.batch_size, 16500).to(self._cfg.args.device)
+            audios = torch.randn(self._cfg.args.batch_size, 16000).to(self._cfg.args.device)
             style_emb, class_emb = self._Enc_style(audios), self._Enc_class(audios)
             print("style_emb:", class_emb)
             print ("emb.size():", class_emb.size())
             print("Encoders are working!")
-            
+            exit()
             # 1. Decoding: use class embedding(from encoder), to generate the label (speaker ID).
             # Optimized towards the ground truth label(speaker ID).
   
