@@ -13,7 +13,7 @@ import math
 import torch
 import torch.nn.functional as F
 
-from parallel_wavegan_layers.causal_conv import CausalConv1d
+from .causal_conv import CausalConv1d
 
 
 class Conv1d(torch.nn.Conv1d):
