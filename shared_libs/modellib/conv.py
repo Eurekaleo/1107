@@ -95,7 +95,7 @@ class DensityEstimator(nn.Module):
         class_emb = self._fc_class(class_emb)
         # print("After fc_style, style_emb.size():", style_emb.size())
         # print("After fc_class, class_emb.size():", class_emb.size())
-        # print("torch.cat([style_emb, class_emb]).size():", torch.cat([style_emb, class_emb], dim=2).size())
+        print("torch.cat([style_emb, class_emb]).size():", torch.cat([style_emb, class_emb], dim=2).size())
         return self._fc_blocks(torch.cat([style_emb, class_emb], dim=2))
 
     def forward(self, style_emb, class_emb, mode):
@@ -569,7 +569,7 @@ class ReconstructorVC(nn.Module):
         gate_channels=128,
         skip_channels=64,
         aux_channels=80,
-        aux_context_window=2,
+        aux_context_window=0,
         dropout=0.0,
         bias=True,
         use_weight_norm=True,
@@ -609,6 +609,7 @@ class ReconstructorVC(nn.Module):
         self.layers = layers
         self.stacks = stacks
         self.kernel_size = kernel_size
+        upsample_params={"upsample_scales": [2, 3, 5, 5]}
 
         # check the number of layers and stacks
         assert layers % stacks == 0
@@ -697,7 +698,7 @@ class ReconstructorVC(nn.Module):
             c = self.upsample_net(c)
             print("c.size():", c.size())
             print("z.size():", z.size())
-            c = torch.zeros(z.size(0), 16, z.size(2)).to(z.device)
+            # c = torch.zeros(z.size(0), 16, z.size(2)).to(z.device)
             assert c.size(-1) == z.size(-1)
 
         # encode to hidden representation
@@ -804,44 +805,156 @@ class ReconstructorVC(nn.Module):
         return self.forward(x, c).squeeze(0).transpose(1, 0)
 
 class DiscriminatorVC(nn.Module):
-    """
-    Discriminator Module.
-    """
-    def __init__(self):
+    # """
+    # Discriminator Module.
+    # """
+    # def __init__(self):
+    #     super(DiscriminatorVC, self).__init__()
+    #     # 1. Architecture
+    #     # (1) Convolution
+    #     self._conv_blocks = nn.Sequential(
+    #         # Layer 1
+    #         nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5, stride=2, padding=1, bias=True),
+    #         nn.InstanceNorm2d(num_features=32, track_running_stats=True),
+    #         nn.LeakyReLU(negative_slope=0.2, inplace=True),
+    #         # Layer 2
+    #         nn.Conv2d(in_channels=32, out_channels=64, kernel_size=5, stride=2, padding=1, bias=True),
+    #         nn.InstanceNorm2d(num_features=64, track_running_stats=True),
+    #         nn.LeakyReLU(negative_slope=0.2, inplace=True),
+    #         # Layer 3
+    #         nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5, stride=2, padding=1, bias=True),
+    #         nn.InstanceNorm2d(num_features=128, track_running_stats=True),
+    #         nn.LeakyReLU(negative_slope=0.2, inplace=True))
+    #     # (2) FC
+    #     self._fc = nn.Linear(in_features=314496, out_features=2, bias=True)
+    #     # 2. Init weights
+    #     self.apply(init_weights)
+
+    # def forward(self, x):
+    #     # 1. Convolution
+    #     # x.size(): (batch_size, 1, T=T'*150)
+    #     print("Before conv_blocks, x.size():", x.size())
+    #     # x = x.unsqueeze(1)
+    #     x = self._conv_blocks(x)
+    #     print("After conv_blocks, x.size():", x.size())
+    #     # 2. FC
+    #     x = x.view(x.size(0), x.size(1) * x.size(2) * x.size(3))
+    #     # print("After view, x.size():", x.size())
+    #     x = self._fc(x)
+    #     # print("After fc, x.size():", x.size())
+    #     # Return
+    #     return x
+    """Parallel WaveGAN Discriminator module."""
+
+    def __init__(
+        self,
+        in_channels=1,
+        out_channels=1,
+        kernel_size=3,
+        layers=10,
+        conv_channels=64,
+        dilation_factor=1,
+        nonlinear_activation="LeakyReLU",
+        nonlinear_activation_params={"negative_slope": 0.2},
+        bias=True,
+        use_weight_norm=True,
+    ):
+        """Initialize Parallel WaveGAN Discriminator module.
+
+        Args:
+            in_channels (int): Number of input channels.
+            out_channels (int): Number of output channels.
+            kernel_size (int): Number of output channels.
+            layers (int): Number of conv layers.
+            conv_channels (int): Number of chnn layers.
+            dilation_factor (int): Dilation factor. For example, if dilation_factor = 2,
+                the dilation will be 2, 4, 8, ..., and so on.
+            nonlinear_activation (str): Nonlinear function after each conv.
+            nonlinear_activation_params (dict): Nonlinear function parameters
+            bias (bool): Whether to use bias parameter in conv.
+            use_weight_norm (bool) Whether to use weight norm.
+                If set to true, it will be applied to all of the conv layers.
+
+        """
         super(DiscriminatorVC, self).__init__()
-        # 1. Architecture
-        # (1) Convolution
-        self._conv_blocks = nn.Sequential(
-            # Layer 1
-            nn.Conv2d(in_channels=1, out_channels=32, kernel_size=5, stride=2, padding=1, bias=True),
-            nn.InstanceNorm2d(num_features=32, track_running_stats=True),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            # Layer 2
-            nn.Conv2d(in_channels=32, out_channels=64, kernel_size=5, stride=2, padding=1, bias=True),
-            nn.InstanceNorm2d(num_features=64, track_running_stats=True),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True),
-            # Layer 3
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=5, stride=2, padding=1, bias=True),
-            nn.InstanceNorm2d(num_features=128, track_running_stats=True),
-            nn.LeakyReLU(negative_slope=0.2, inplace=True))
-        # (2) FC
-        self._fc = nn.Linear(in_features=314496, out_features=2, bias=True)
-        # 2. Init weights
-        self.apply(init_weights)
+        assert (kernel_size - 1) % 2 == 0, "Not support even number kernel size."
+        assert dilation_factor > 0, "Dilation factor must be > 0."
+        self.conv_layers = torch.nn.ModuleList()
+        conv_in_channels = in_channels
+        for i in range(layers - 1):
+            if i == 0:
+                dilation = 1
+            else:
+                dilation = i if dilation_factor == 1 else dilation_factor**i
+                conv_in_channels = conv_channels
+            padding = (kernel_size - 1) // 2 * dilation
+            conv_layer = [
+                Conv1d(
+                    conv_in_channels,
+                    conv_channels,
+                    kernel_size=kernel_size,
+                    padding=padding,
+                    dilation=dilation,
+                    bias=bias,
+                ),
+                getattr(torch.nn, nonlinear_activation)(
+                    inplace=True, **nonlinear_activation_params
+                ),
+            ]
+            self.conv_layers += conv_layer
+        padding = (kernel_size - 1) // 2
+        last_conv_layer = Conv1d(
+            conv_in_channels,
+            out_channels,
+            kernel_size=kernel_size,
+            padding=padding,
+            bias=bias,
+        )
+        self.conv_layers += [last_conv_layer]
+
+        # apply weight norm
+        if use_weight_norm:
+            self.apply_weight_norm()
 
     def forward(self, x):
-        # 1. Convolution
-        # print("Before conv_blocks, x.size():", x.size())
-        x = x.unsqueeze(1)
-        x = self._conv_blocks(x)
-        # print("After conv_blocks, x.size():", x.size())
-        # 2. FC
-        x = x.view(x.size(0), x.size(1) * x.size(2) * x.size(3))
-        # print("After view, x.size():", x.size())
-        x = self._fc(x)
-        # print("After fc, x.size():", x.size())
-        # Return
+        """Calculate forward propagation.
+
+        Args:
+            x (Tensor): Input noise signal (B, 1, T).
+
+        Returns:
+            Tensor: Output tensor (B, 1, T)
+            改成了Tensor: Output tensor (B, 2)
+
+        """
+        for f in self.conv_layers:
+            x = f(x)
+        # return x
+        x = x.mean(2)    # (B, 1)
+        x = torch.cat((x, 1 - x), dim=1)    # (B, 2)
         return x
+
+    def apply_weight_norm(self):
+        """Apply weight normalization module from all of the layers."""
+
+        def _apply_weight_norm(m):
+            if isinstance(m, torch.nn.Conv1d) or isinstance(m, torch.nn.Conv2d):
+                torch.nn.utils.weight_norm(m)
+                logging.debug(f"Weight norm is applied to {m}.")
+
+        self.apply(_apply_weight_norm)
+
+    def remove_weight_norm(self):
+        """Remove weight normalization module from all of the layers."""
+
+        def _remove_weight_norm(m):
+            try:
+                logging.debug(f"Weight norm is removed from {m}.")
+                torch.nn.utils.remove_weight_norm(m)
+            except ValueError:  # this module didn't have weight norm
+                return
+
+        self.apply(_remove_weight_norm)
 
 # ----------------------------------------------------------------------------------------------------------------------
 # Shapes

@@ -115,17 +115,17 @@ class DisenIB(IterativeBaseModel):
             # style_emb = torch.randn(self._cfg.args.batch_size, self._cfg.args.style_dim, 100).to(self._cfg.args.device) # 64, 16. 100
             # class_emb = torch.randn(self._cfg.args.batch_size, self._cfg.args.class_dim).to(self._cfg.args.device) # 64, 16 
             label = torch.from_numpy(np.array([0] * self._cfg.args.batch_size)).to(self._cfg.args.device, dtype=torch.int64) # 64
-            # audios = torch.randn(self._cfg.args.batch_size, self._cfg.args.num_mels, 400).to(self._cfg.args.device) # 64, 80, 400
+            audios = torch.randn(self._cfg.args.batch_size, 16500).to(self._cfg.args.device)
+            # 这个16500是时间维度，必须是150的倍数
 
-            audios = torch.randn(self._cfg.args.batch_size, 16000).to(self._cfg.args.device)
             style_emb, class_emb = self._Enc_style(audios), self._Enc_class(audios)
-            print("style_emb:", class_emb)
-            print ("emb.size():", class_emb.size())
-            # exit()
+            # style_emb.size: (batch_size, style_dim, T'=T/150)
+            # class_emb.size: (batch_size, class_dim, T'=T/150)
             print("Encoders are working!")
+
+            
             # 1. Decoding: use class embedding(from encoder), to generate the label (speaker ID).
             # Optimized towards the ground truth label(speaker ID).
-  
             dec_output = self._Dec(resampling(class_emb, self._cfg.args.class_std))
             print(dec_output.size(), label.size())
             loss_dec = self._criterions['dec'](dec_output, label)            
@@ -135,19 +135,19 @@ class DisenIB(IterativeBaseModel):
             rec_output = self._Rec(audios.unsqueeze(1), resampling(style_emb, self._cfg.args.style_std))
             print("rec_output.size():", rec_output.size())  # (batch_size, 1, time_steps)
             print("Reconstructor is working!")
-            rec_output = rec_output.transpose(1, 2) # (batch_size, time_steps, 1)
-            # print("rec_output.size():", rec_output.size())
-            # print("audios.size():", audios.size())
-
-            loss_rec = self._criterions['rec'](rec_output, audios.unsqueeze(1))
+            # rec_output.transpose(1, 2).size: (batch_size, time_steps, 1)
+            loss_rec = self._criterions['rec'](rec_output.transpose(1, 2), audios.unsqueeze(1))
             # print("Successful Reconstruction!")
             # Backward
             summarize_losses_and_backward(loss_dec, loss_rec, retain_graph=True)
             # print("Successful Backward!")
+            
             # ----------------------------------------------------------------------------------------------------------
             # Estimator
             # ----------------------------------------------------------------------------------------------------------
             # Calculate output (batch*n_samples, ) & loss (1, ).
+            style_emb = style_emb.transpose(1, 2)   # (batch_size, T', style_dim)
+            class_emb = class_emb.transpose(1, 2)   # (batch_size, T', class_dim)
             est_output = self._Est(
                 resampling(style_emb, self._cfg.args.est_style_std),
                 resampling(class_emb, self._cfg.args.est_class_std), mode='orig')
