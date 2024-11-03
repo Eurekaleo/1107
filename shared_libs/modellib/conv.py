@@ -361,7 +361,8 @@ class EncoderTIMIT(nn.Module):
                 C // 4,
                 251,
                 stride=sinc_stride,
-            ),as_conv1d=True
+                sample_rate=16000.0
+            ),padding=125
         )
         self.relu = nn.ReLU()
         self.bn1 = nn.BatchNorm1d(C // 4)
@@ -416,12 +417,12 @@ class EncoderTIMIT(nn.Module):
 
         with torch.cuda.amp.autocast(enabled=False):
             x = self.preprocess(x)
-            # print("x.size():", x.size())
+            print("x.size():", x.size())
             # bs,1,?
             # 16000 -> T/S = 1575
             # 16500 -> T/S = 1625
             x = torch.abs(self.conv1(x))
-            # print("x.size():", x.size())
+            print("x.size():", x.size())
             # bs,C/4,t*15 = bs,C/4,T/S
             if self.log_sinc:
                 x = torch.log(x + 1e-6)
