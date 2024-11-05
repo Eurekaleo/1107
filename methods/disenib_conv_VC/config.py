@@ -35,10 +35,10 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
         # Datasets
         ################################################################################################################
         # TIMIT Dataset specific arguments
-        self.parser.add_argument("--dataset_path",                  type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/output", help="Root directory of the TIMIT dataset")
-        self.parser.add_argument("--train_list",                    type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_train.scp")
-        self.parser.add_argument("--test_list",                     type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_test.scp")
-        self.parser.add_argument("--labels_list",                   type=str,   default="/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_labels.npy")
+        self.parser.add_argument("--dataset_path",                  type=str,   default="./d_vector_SincNet/output", help="Root directory of the TIMIT dataset")
+        self.parser.add_argument("--train_list",                    type=str,   default="./d_vector_SincNet/data_lists/TIMIT_train.scp")
+        self.parser.add_argument("--test_list",                     type=str,   default="./d_vector_SincNet/data_lists/TIMIT_test.scp")
+        self.parser.add_argument("--labels_list",                   type=str,   default="./d_vector_SincNet/data_lists/TIMIT_labels.npy")
         self.parser.add_argument("--dataset_shuffle",               type=int,   default=1,  choices=[0, 1])
         self.parser.add_argument("--dataset_num_threads",           type=int,   default=0)
         self.parser.add_argument("--dataset_drop_last",             type=bool,  default=True)
@@ -81,8 +81,8 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
 
     def _add_additional_args(self):
         # Epochs & batch size
-        self.parser.add_argument("--steps",                         type=int,   default=10)
-        self.parser.add_argument("--batch_size",                    type=int,   default=10)
+        self.parser.add_argument("--steps",                         type=int,   default=20000)
+        self.parser.add_argument("--batch_size",                    type=int,   default=3)
         # Learning rate
         self.parser.add_argument("--learning_rate",                 type=float, default=0.0001)
         # Frequency
