@@ -1,0 +1,70 @@
+10001 Marokon maatalousala saa osakseen etuoikeutettua kohtelua, kun se vie tuotteitaan Eurooppaan.
+10002 Uusiutuva energia ei ole poikkeus.
+10003 Näitä tavoitteita koskevaa lainsäädäntöä onkin jo saatu aikaan.
+10004 Ranskasta löytyy todisteeksi lukuisia esimerkkejä.
+10005 Kesäajasta on käytännössä tullut normaaliaika.
+10006 Siltä osin te olette uskoakseni käsitellyt tärkeää asiaa.
+10007 Parlamentti edustaa Euroopan ihmisiä.
+10008 Kriteereistä keskustellaan parhaillaan.
+10009 Kaikki nämä ovat yhteydessä toisiinsa.
+10010 Käsiteltävä tilanne on oikeastaan varsin kyyninen. Tarkastelemme postin monopolia.
+10011 Kalastajat ovat toimettomia, väsyneitä ja pettyneitä.
+10012 kun hinta nousee yli kolmeen kymmeneen markkaan kilo myynti putoaa
+10013 arpa on ratkaisevassa asemassa myös haminassa
+10014 abba fanit jonottivat lämpiöön nähdäkseen idolinsa edes hetken aikaa
+10015 olin neljä kertaa mukana poikien itä länsi ottelussa
+10016 teeainekset voi kuivata vaikka ihan tavallisessa uunissa
+10017 yksi keino on tietysti nopeuttaa kaikkea liikennettä radalla
+10018 mafian mobbaajat rampauttivat sisiliassa satoja ihmisiä
+10019 alitalon ryhmän tutkimuksissa on löytynyt useita uusia kasvutekijöitä
+10020 hänet onkin palkittu parhaana suomalaisena esseistinä muutama vuosi sitten
+10021 koirien ystävien uusin villitys ovat buldoggit ja valtavat tanskandoggit
+10022 ottelu oli tapahtumiltaan varsin tasainen
+10023 loikkanen hakee kalevan kisoista huomattavasti pidempiä kaaria
+10024 toimittamisen ammattitaidon kehittäminen kuuluu pitkän tähtäimen suunnitteluun
+10025 uudessa järjestelmässä omavastuu olisi nykyistä suurempi
+10026 esimerkkinä käyköön suomalainen elokuva
+10027 hoitoajat riippuvat taudista keskimäärin hoitopäiviä kertyy kahdeksan
+10028 kaiken yllä roikkuu valvontahelikopterin ääni
+10029 huovisen ehdotus menee seuraavaksi piispainkokouksen käsittelyyn
+10030 seppo ja aila nieminen suuntaavat näsijärvelle
+10031 silti virossa purnataan enemmän kuin koskaan aikaisemmin
+10032 voimalan laitteistoa parannellaan uusinta tekniikkaa ja tietämystä hyödyntäen
+10033 ainahan diktaattorit pystyvät verhoamaan tekosensa laillisuuden kaapuun
+10034 ihmisten elintason noustessa hyötyeläinten elinolot ovat huonontuneet
+10035 jatkoajalla pallo ei enää pomppinut vilppaalle
+10036 kurssipudotuksesta on kärsinyt myös rauma
+10037 suomessa istutetaan tänäkin keväänä jopa sata viisi kymmentä miljoonaa uutta puuta
+10038 tietysti aina on niitä jotka yhdistävät poliisin vain sakottamiseen
+10039 pituusmiehille myötäinen aiheutti myös ongelmia
+10040 toisessa koulussa on musiikinopetuksessa sama tilanne
+10041 aggregaateista olisi nyt hyötyä jos ne saataisiin valjastettua nopeasti käyttöön
+10042 kukin on omalla alallaan maailman markkinajohtaja tai kakkonen
+10043 vasta kuusivuotias pääsee pyöräkaistalle hurjastelemaan
+10044 kerättävää löytyy alkukeväästä lähtien ensilumen tuloon saakka
+10045 pajarakennuksessa oli mahdollisuus omakätisesti valmistaa lintulauta
+10046 lapsille on viisasta ilman paniikkia muistuttaa mieliin vanhat kunnon ohjeet
+10047 yhdistämällä valtionpäämiehet saadaan aikaan globaalisestikin merkittävä säästö
+10048 suomalainen alan firma on valittu projektin johtajaksi ja teknologian tuottajaksi
+10049 odotamme mitä tuottajayhteisö saa aikaiseksi
+10050 mies kiisti lähes kaikki syytteet
+10051 radion työryhmä oli saapunut tukholmasta paikan päälle
+10052 nyt baarimikko päätti jälleen sallia juomisen
+10053 hän on kertonut aikovansa kloonata ihmisen kymmenen kuukauden kuluessa
+10054 iltalomille valmistaudutaan innokkaasti mutta huolella
+10055 kirkon henki on kuitenkin hänelle tilaakin tärkeämpi
+10056 savelan mukaan asiat voi tarjoilla eri tavalla
+10057 päätöksiä siitä ei ole vielä tehty
+10058 luvuissa ovat mukana vain käytetyt kerrostaloalueet
+10059 joskus meillä on ollut ohjelmassa italialaisia virtuoosisonaatteja muttei aina
+10060 filosofointi teilaa fysiatrisesti kähäryydeksi.
+10061 viestiyhteydelliset todistamattomat ovat tylsytelleet jalkaväkiä.
+10062 säveltäjämestareiden yksilökäsite puhahti jämäkästi onkijaksi.
+10063 ripittäytyvätkö kahdenkertaiset aikautukset armeliaasti rinnepeltoa?
+10064 rumentuivatko hellesäiden vartevuudet pikimmältään hedelmöintiä?
+10065 vetyttiin joukoittain muodostelmaluistelulle.
+10066 maustesilakka tuudittelee salaan kyydiksi.
+10067 vedeltiin irvissä seitsentoistavuotiaaseen.
+10068 heiluttiin kuin puuvillapensaille.
+10069 vuorittiko laulukonsertin trotskilaisuus lukkoon suuontelolle?
+10070 lokeroiduttiin pöytätennisottelulle.

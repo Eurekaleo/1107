@@ -80,7 +80,6 @@ def mnist_paths(name):
         'test': (os.path.join(__DATA_ROOT__, "%s/t10k-images.idx3-ubyte" % name),
                  os.path.join(__DATA_ROOT__, "%s/t10k-labels.idx1-ubyte" % name))}
 
-
 class MNIST(BaseClassification):
     """
     MNIST dataset.
@@ -121,7 +120,6 @@ class MNIST(BaseClassification):
         # Return
         return image, label
 
-
 class FlattenMNIST(MNIST):
     """
     Flatten MNIST dataset.
@@ -135,7 +133,6 @@ class FlattenMNIST(MNIST):
         ) if 'transforms' not in kwargs.keys() else kwargs['transforms']
         # Init
         super(FlattenMNIST, self).__init__(*(mnist_paths(name)[phase]), transforms=transforms)
-
 
 class ImageMNIST(MNIST):
     """
@@ -158,7 +155,6 @@ class ImageMNIST(MNIST):
 # TIMIT
 # ----------------------------------------------------------------------------------------------------------------------
 
-
 import os
 import soundfile as sf
 import torch
@@ -169,16 +165,13 @@ class TIMITDataset(BaseClassification):
     """
     TIMIT dataset
     """
-    def __init__(self, phase, data_list, label_file, data_folder, cw_len, cw_shift, transforms=None):
+    def __init__(self, phase, data_list, label_file, data_folder, transforms=None):
         assert phase in ['train', 'test']
         self.phase = phase
         self.data_folder = data_folder
         self.transforms = transforms
         self.wav_files = self._load_data_list(data_list)
         self.labels = self._load_labels(label_file)
-        self.cw_len = cw_len
-        self.cw_shift = cw_shift
-        self.max_frames = 512 # add: max frame 512
 
     def _load_data_list(self, data_list):
         with open(data_list, 'r') as file:
@@ -200,63 +193,129 @@ class TIMITDataset(BaseClassification):
         wav_path = os.path.join(self.data_folder, dir_path, file_name)
 
         signal, fs = sf.read(wav_path)
-        # epsilon = 1e-8
-        # signal = signal / (np.max(np.abs(signal)) + epsilon)
-        signal = signal / np.max(np.abs(signal))
+        signal = signal / np.max(np.abs(signal))  
         signal = torch.from_numpy(signal).float()
 
-        # segment signal into frames
-        wlen = int(fs * self.cw_len / 1000)  
-        wshift = int(fs * self.cw_shift / 1000) 
+        resampler = torchaudio.transforms.Resample(orig_freq=fs, new_freq=16000)
+        signal = resampler(signal)
 
-        chunks = []
-        beg_samp = 0
-        end_samp = wlen
-        while end_samp <= signal.shape[0]:
-            chunk = signal[beg_samp:end_samp]
-            chunks.append(chunk)
-            beg_samp += wshift
-            end_samp = beg_samp + wlen
+        if self.transforms:
+            for transform in self.transforms:
+                signal = transform(signal)
 
-        # padding the last chunk if necessary
-        if beg_samp < signal.shape[0]:
-            chunk = signal[beg_samp:]
-            padding = torch.zeros(wlen - chunk.shape[0])
-            chunk = torch.cat((chunk, padding))
-            chunks.append(chunk)
+        label = self.labels[self.wav_files[idx]]  
+        # print("signal:", signal.size(),"label:", label)
+        return signal, label
 
-        signal_chunks = torch.stack(chunks)
+# ----------------------------------------------------------------------------------------------------------------------
+# VCC2020
+# ----------------------------------------------------------------------------------------------------------------------
 
-        # padding -> 512 frames # 512, 3200 (same as cnn input dim)
-        if signal_chunks.size(0) < self.max_frames:
-            padding_frames = torch.zeros(self.max_frames - signal_chunks.size(0), wlen)
-            signal_chunks = torch.cat((signal_chunks, padding_frames), dim=0)
+class VCC2020Dataset(Dataset):
+    """
+    VCC2020 dataset for English-only source speakers with optional data augmentation.
+    """
+    def __init__(self, phase, data_folder="/home/cuizhouying/CS4347/CS4347/datasets/vcc2020", transforms=None):
+        assert phase in ['train', 'test']
+        self.phase = phase
+        self.data_folder = data_folder
+        self.transforms = transforms  # List of transformations (e.g., [NoiseAug(), RIRAug()])
+        self.wav_files = self._load_wav_files()
 
-        elif signal_chunks.size(0) > self.max_frames:
-            signal_chunks = signal_chunks[:self.max_frames] 
-
-        # mel_features: 
-        # if self.transforms:
-        #     signal_chunks = self.transforms(signal_chunks)
-        # signal_chunks = torch.mean(signal_chunks, dim=-1) # 512, 80, 7 -> 512, 80
+    def _load_wav_files(self):
+        wav_files = []
         
-        label = self.labels[self.wav_files[idx]] # integer
+        srcspks = ["SEF1", "SEF2", "SEM1", "SEM2"]
+        trgspks_task1 = ["TEF1", "TEF2", "TEM1", "TEM2"]  # Only Task1: English
+        speakers = srcspks + trgspks_task1
+
+        for spk in speakers:
+            spk_folder = os.path.join(self.data_folder, spk)
+            if os.path.isdir(spk_folder):
+                files = [f for f in os.listdir(spk_folder) if f.endswith(".wav")]
+                files.sort()  
+                for file_name in files:
+                    wav_files.append(os.path.join(spk_folder, file_name))
+        return wav_files
+
+    def __len__(self):
+        return len(self.wav_files)
+
+    def __getitem__(self, idx):
+        wav_path = self.wav_files[idx]
+        signal, fs = sf.read(wav_path)
+        signal = signal / np.max(np.abs(signal)) 
+        signal = torch.from_numpy(signal).float()
         
-        # label = F.one_hot(torch.tensor(label), num_classes=630) # one-hot?
-        # print(signal_chunks.size(), label) 
-
-        return signal_chunks, label
-
-        # signal, fs = sf.read(wav_path)
-        # signal = signal / np.max(np.abs(signal))  
-        # signal = torch.from_numpy(signal).float()
-
-        # if self.transforms:
-        #     signal = self.transforms(signal)
-
-        # label = self.labels[self.wav_files[idx]]
-        # print("TIMIT:", signal.size())
+        resampler = torchaudio.transforms.Resample(orig_freq=fs, new_freq=16000)
+        signal = resampler(signal)
         
-        # return signal, label
+        if self.transforms:
+            for transform in self.transforms:
+                signal = transform(signal)
 
+        # label = os.path.basename(os.path.dirname(wav_path))  # Use speaker name as label
+        speaker_to_id = {
+            "SEF1": 0,
+            "SEF2": 1,
+            "SEM1": 2,
+            "SEM2": 3,
+            "TEF1": 4,
+            "TEF2": 5,
+            "TEM1": 6,
+            "TEM2": 7
+        }
+        label = speaker_to_id[os.path.basename(os.path.dirname(wav_path))]
 
+        return signal, label
+
+# ----------------------------------------------------------------------------------------------------------------------
+# VCTK
+# ----------------------------------------------------------------------------------------------------------------------
+class VCTKDataset(Dataset):
+    """
+    VCTK dataset for loading audio signals and speaker labels.
+    """
+    def __init__(self, phase, data_folder="/data1/cuizhouying/dataset/VCTK-Corpus", transforms=None):
+        assert phase in ['train', 'test']
+        self.phase = phase
+        self.data_folder = data_folder
+        self.transforms = transforms  # 
+        self.wav_files = self._load_wav_files()
+
+    def _load_wav_files(self):
+        wav_files = []
+        wav_dir = os.path.join(self.data_folder, "wav48")
+
+        speakers = [d for d in os.listdir(wav_dir) if os.path.isdir(os.path.join(wav_dir, d))]
+        speakers.sort()  
+
+        for spk in speakers:
+            spk_folder = os.path.join(wav_dir, spk)
+            files = [f for f in os.listdir(spk_folder) if f.endswith(".wav")]
+            files.sort()  
+            for file_name in files:
+                wav_files.append(os.path.join(spk_folder, file_name))
+        
+        return wav_files
+
+    def __len__(self):
+        return len(self.wav_files)
+
+    def __getitem__(self, idx):
+        wav_path = self.wav_files[idx]
+        # print(wav_path)
+        signal, fs = sf.read(wav_path)
+        signal = signal / np.max(np.abs(signal))  
+        signal = torch.from_numpy(signal).float()
+
+        resampler = torchaudio.transforms.Resample(orig_freq=fs, new_freq=16000)
+        signal = resampler(signal)
+
+        if self.transforms:
+            for transform in self.transforms:
+                signal = transform(signal)
+
+        label = os.path.basename(os.path.dirname(wav_path)).lstrip('p')
+
+        return signal, int(label)  
