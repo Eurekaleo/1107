@@ -16,7 +16,8 @@ class Config:
         fs = 16000  
         train_list = "/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_train.scp"
         labels_list = "/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/data_lists/TIMIT_labels.npy"
-        dataset_path = "/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/output"
+        # dataset_path = "/home/cuizhouying/CS4347/CS4347/d_vector_SincNet/output"
+        dataset_path = "./datasets/TIMIT"
 
     args = Args()
 

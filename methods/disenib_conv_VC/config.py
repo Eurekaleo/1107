@@ -35,7 +35,7 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
         # Datasets
         ################################################################################################################
         # TIMIT Dataset specific arguments
-        self.parser.add_argument("--dataset_path",                  type=str,   default="./d_vector_SincNet/output", help="Root directory of the TIMIT dataset")
+        self.parser.add_argument("--dataset_path",                  type=str,   default="./datasets/TIMIT", help="Root directory of the TIMIT dataset")
         self.parser.add_argument("--train_list",                    type=str,   default="./d_vector_SincNet/data_lists/TIMIT_train.scp")
         self.parser.add_argument("--test_list",                     type=str,   default="./d_vector_SincNet/data_lists/TIMIT_test.scp")
         self.parser.add_argument("--labels_list",                   type=str,   default="./d_vector_SincNet/data_lists/TIMIT_labels.npy")
