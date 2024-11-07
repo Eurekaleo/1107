@@ -81,8 +81,8 @@ class ConfigTrain(CanonicalConfigTrainPyTorch):
 
     def _add_additional_args(self):
         # Epochs & batch size
-        self.parser.add_argument("--steps",                         type=int,   default=20000)
-        self.parser.add_argument("--batch_size",                    type=int,   default=3)
+        self.parser.add_argument("--steps",                         type=int,   default=60)
+        self.parser.add_argument("--batch_size",                    type=int,   default=20)
         # Learning rate
         self.parser.add_argument("--learning_rate",                 type=float, default=0.0001)
         # Frequency

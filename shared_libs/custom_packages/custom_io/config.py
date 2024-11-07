@@ -479,4 +479,4 @@ class CanonicalConfigTrainPyTorch(CanonicalConfig):
     def _add_root_args(self):
         super(CanonicalConfigTrainPyTorch, self)._add_root_args()
         # Context
-        self.parser.add_argument("--gpu_ids",   type=str,   default='0', help="GPU ids. Set to -1 for CPU mode. ")
+        self.parser.add_argument("--gpu_ids",   type=str,   default='3', help="GPU ids. Set to -1 for CPU mode. ")
